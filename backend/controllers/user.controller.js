@@ -85,9 +85,7 @@ const getUserById = async (req, res) => {
     }
 };
 
-// @desc    Update user
-// @route   PUT /api/users/:id
-// @access  Private
+
 const updateUser = async (req, res) => {
     try {
         let user = await User.findById(req.params.id);
@@ -99,7 +97,7 @@ const updateUser = async (req, res) => {
                 message: 'User not found'
             });
         }
-
+        console.log(req.user);
         if (req.user.role !== 'admin' && req.user.id !== req.params.id) {
             return res.status(403).json({
                 success: false,
