@@ -130,32 +130,25 @@ For complete API documentation, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.m
 ## 🛠️ Technology Stack
 
 ### Frontend
-| Technology | Purpose |
-|----------|---------|
-| React.js | UI library |
-| React Router | Client-side routing |
-| Axios | HTTP client |
-| React Hook Form | Form management |
-| CSS Modules | Component styling |
-| React Context API / Redux | State management |
+- **React.js** - UI library
+- **React Router** - Client-side routing
+- **Axios** - HTTP client
+- **React Hook Form** - Form management
+- **CSS Modules** - Component styling
+- **React Context API / Redux** - State management
 
 ### Backend
-| Technology | Purpose |
-|----------|---------|
-| Node.js | Runtime environment |
-| Express.js | Web framework |
-| MongoDB | Database |
-| Mongoose | ODM (Object Data Modeling) |
-| JWT | Authentication |
-| Joi | Validation |
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **MongoDB** - Database
+- **Mongoose** - ODM (Object Data Modeling)
+- **JWT** - Authentication
+- **Joi** - Validation
 
 ### Development Tools
-| Tool | Purpose |
-|------|---------|
-| Git | Version control |
-| Postman / Insomnia | API testing |
-| VS Code | IDE (recommended) |
-
+- **Git** - Version control
+- **Postman** - API testing
+- **VS Code** - IDE
 
 ---
 
