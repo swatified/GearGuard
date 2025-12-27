@@ -12,7 +12,7 @@ Built with Next.js 16, React 19, TypeScript, and Tailwind CSS.
 2. **Configure Environment Variables**
    Create a `.env.local` file:
    ```env
-   NEXT_PUBLIC_API_URL=http://localhost:5000/api
+   NEXT_PUBLIC_API_URL=http://localhost:5001/api
    NEXT_PUBLIC_ENV=development
    ```
 

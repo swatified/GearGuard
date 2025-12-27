@@ -18,12 +18,17 @@ export async function register(data: RegisterRequest): Promise<AuthResponse> {
     
     throw new Error('Invalid response format');
   } catch (error: any) {
-    const apiError: ApiError = error.response?.data || {
+    if (error.response?.data) {
+      const apiError: ApiError = error.response.data;
+      throw apiError;
+    }
+    
+    const networkError: ApiError = {
       success: false,
       error: 'Network Error',
-      message: error.message || 'An unexpected error occurred',
+      message: error.message || 'Unable to connect to server. Please check your connection.',
     };
-    throw apiError;
+    throw networkError;
   }
 }
 
@@ -41,12 +46,17 @@ export async function login(data: LoginRequest): Promise<AuthResponse> {
     
     throw new Error('Invalid response format');
   } catch (error: any) {
-    const apiError: ApiError = error.response?.data || {
+    if (error.response?.data) {
+      const apiError: ApiError = error.response.data;
+      throw apiError;
+    }
+    
+    const networkError: ApiError = {
       success: false,
       error: 'Network Error',
-      message: error.message || 'An unexpected error occurred',
+      message: error.message || 'Unable to connect to server. Please check your connection.',
     };
-    throw apiError;
+    throw networkError;
   }
 }
 
@@ -63,12 +73,17 @@ export async function getCurrentUser(): Promise<User> {
     
     throw new Error('Invalid response format');
   } catch (error: any) {
-    const apiError: ApiError = error.response?.data || {
+    if (error.response?.data) {
+      const apiError: ApiError = error.response.data;
+      throw apiError;
+    }
+    
+    const networkError: ApiError = {
       success: false,
       error: 'Network Error',
-      message: error.message || 'An unexpected error occurred',
+      message: error.message || 'Unable to connect to server. Please check your connection.',
     };
-    throw apiError;
+    throw networkError;
   }
 }
 
@@ -98,12 +113,17 @@ export async function refreshToken(): Promise<string> {
     
     throw new Error('Invalid response format');
   } catch (error: any) {
-    const apiError: ApiError = error.response?.data || {
+    if (error.response?.data) {
+      const apiError: ApiError = error.response.data;
+      throw apiError;
+    }
+    
+    const networkError: ApiError = {
       success: false,
       error: 'Network Error',
-      message: error.message || 'An unexpected error occurred',
+      message: error.message || 'Unable to connect to server. Please check your connection.',
     };
-    throw apiError;
+    throw networkError;
   }
 }
 

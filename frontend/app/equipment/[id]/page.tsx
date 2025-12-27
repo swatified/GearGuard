@@ -1,7 +1,10 @@
 'use client';
 
 import { use } from 'react';
+import { useRouter } from 'next/navigation';
 import EquipmentDetail from '@/app/components/equipment/EquipmentDetail';
+import { useRequireAuth } from '@/app/hooks/useRequireAuth';
+import DashboardShell from '@/app/components/layout/DashboardShell';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -57,17 +60,28 @@ const mockRequests = [
 
 export default function EquipmentDetailPage({ params }: PageProps) {
   const { id } = use(params);
+  const router = useRouter();
+  const { loading } = useRequireAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F8F9]">
+        <div className="text-[#5F6B76]">Loading...</div>
+      </div>
+    );
+  }
 
   const handleMaintenanceClick = () => {
-    // TODO: Navigate to maintenance requests filtered by equipment
-    console.log('Navigate to maintenance for equipment:', id);
+    router.push(`/maintenance?equipmentId=${id}`);
   };
 
   return (
-    <EquipmentDetail
-      equipment={mockEquipment}
-      requests={mockRequests}
-      onMaintenanceClick={handleMaintenanceClick}
-    />
+    <DashboardShell>
+      <EquipmentDetail
+        equipment={mockEquipment}
+        requests={mockRequests}
+        onMaintenanceClick={handleMaintenanceClick}
+      />
+    </DashboardShell>
   );
 }

@@ -3,6 +3,20 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import type { MaintenanceRequest, RequestType, Equipment } from '@/app/types/maintenance';
+import {
+  ClipboardList,
+  Wrench,
+  Tag,
+  FileText,
+  Layout,
+  Calendar,
+  Clock,
+  User,
+  AlertCircle,
+  Save,
+  X,
+  Plus
+} from 'lucide-react';
 
 interface MaintenanceRequestFormProps {
   onSubmit: (data: MaintenanceRequestFormData) => void;
@@ -51,7 +65,7 @@ export default function MaintenanceRequestForm({
         : '',
       duration: initialData?.duration || undefined,
       technicianId: initialData?.technicianId || '',
-      priority: initialData?.priority || '',
+      priority: initialData?.priority || '1',
     },
   });
 
@@ -62,10 +76,6 @@ export default function MaintenanceRequestForm({
       const eq = equipment.find((e) => e.id === equipmentId);
       if (eq) {
         setSelectedEquipment(eq);
-        // Auto-fill team from equipment if available
-        if (eq.maintenanceTeamId) {
-          // Team auto-fill logic would go here
-        }
       }
     }
   }, [equipmentId, equipment]);
@@ -75,231 +85,198 @@ export default function MaintenanceRequestForm({
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-[#F7F8F9] min-h-screen">
-      <div className="bg-white rounded-lg p-8">
-        <h1 className="text-2xl font-semibold text-[#1C1F23] mb-8">
-          {initialData ? 'Edit Maintenance Request' : 'New Maintenance Request'}
-        </h1>
+    <div className="max-w-4xl mx-auto p-6 pt-20">
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#ECEFF1] overflow-hidden">
+        {/* Header */}
+        <div className="px-8 py-6 border-b border-[#ECEFF1] flex items-center justify-between bg-[#F7F8F9]/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-[#5B7C99] text-white rounded-lg shadow-sm">
+              <ClipboardList size={20} />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-[#1C1F23]">
+                {initialData ? 'Edit Request' : 'New Maintenance Request'}
+              </h1>
+              <p className="text-xs text-[#90A4AE] font-semibold uppercase tracking-wider mt-0.5">
+                {initialData ? initialData.name : 'Draft Request'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded text-[10px] font-bold uppercase tracking-widest">
+              Draft
+            </span>
+          </div>
+        </div>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8">
-          {/* Core Info Section */}
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="p-8 space-y-10">
+          {/* Core Information */}
           <section>
-            <h2 className="text-lg font-medium text-[#1C1F23] mb-4">
-              Core Information
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="subject"
-                  className="block text-sm font-medium text-[#1C1F23] mb-2"
-                >
-                  Subject *
+            <div className="flex items-center gap-2 mb-6">
+              <span className="w-1 h-6 bg-[#5B7C99] rounded-full"></span>
+              <h2 className="text-lg font-bold text-[#1C1F23]">Request Overview</h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="md:col-span-2 space-y-1.5 focus-within:z-10 group">
+                <label className="text-sm font-semibold text-[#5F6B76] flex items-center gap-2 group-focus-within:text-[#5B7C99] transition-colors">
+                  <Tag size={14} /> Subject *
                 </label>
                 <input
-                  id="subject"
-                  type="text"
                   {...register('subject', { required: 'Subject is required' })}
-                  className="w-full px-4 py-2 border border-[#ECEFF1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5B7C99] focus:border-transparent text-[#1C1F23]"
-                  placeholder="Describe the maintenance needed"
+                  className="w-full px-4 py-2.5 bg-[#F7F8F9] border border-[#ECEFF1] rounded-xl text-sm font-medium focus:outline-none focus:border-[#5B7C99] focus:bg-white transition-all shadow-sm"
+                  placeholder="e.g. Oil Leak in Hydraulic System"
                 />
                 {errors.subject && (
-                  <p className="mt-1 text-sm text-[#A14A4A]">
-                    {errors.subject.message}
+                  <p className="mt-1 text-xs font-bold text-red-500 uppercase flex items-center gap-1">
+                    <AlertCircle size={10} /> {errors.subject.message}
                   </p>
                 )}
               </div>
 
-              <div>
-                <label
-                  htmlFor="requestType"
-                  className="block text-sm font-medium text-[#1C1F23] mb-2"
-                >
-                  Type *
+              <div className="space-y-1.5 group">
+                <label className="text-sm font-semibold text-[#5F6B76] flex items-center gap-2 group-focus-within:text-[#5B7C99] transition-colors">
+                  <Wrench size={14} /> Type *
                 </label>
                 <select
-                  id="requestType"
-                  {...register('requestType', {
-                    required: 'Request type is required',
-                  })}
-                  className="w-full px-4 py-2 border border-[#ECEFF1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5B7C99] focus:border-transparent text-[#1C1F23] bg-white"
+                  {...register('requestType', { required: 'Type is required' })}
+                  className="w-full px-4 py-2.5 bg-[#F7F8F9] border border-[#ECEFF1] rounded-xl text-sm font-medium focus:outline-none focus:border-[#5B7C99] focus:bg-white transition-all appearance-none shadow-sm"
                 >
-                  <option value="corrective">Corrective</option>
-                  <option value="preventive">Preventive</option>
+                  <option value="corrective">Corrective (Breakdown)</option>
+                  <option value="preventive">Preventive (Routine)</option>
                 </select>
-                {errors.requestType && (
-                  <p className="mt-1 text-sm text-[#A14A4A]">
-                    {errors.requestType.message}
-                  </p>
-                )}
               </div>
 
-              <div>
-                <label
-                  htmlFor="description"
-                  className="block text-sm font-medium text-[#1C1F23] mb-2"
+              <div className="space-y-1.5 group">
+                <label className="text-sm font-semibold text-[#5F6B76] flex items-center gap-2 group-focus-within:text-[#5B7C99] transition-colors">
+                  <Layout size={14} /> Priority
+                </label>
+                <select
+                  {...register('priority')}
+                  className="w-full px-4 py-2.5 bg-[#F7F8F9] border border-[#ECEFF1] rounded-xl text-sm font-medium focus:outline-none focus:border-[#5B7C99] focus:bg-white transition-all appearance-none shadow-sm"
                 >
-                  Description
+                  <option value="0">Normal</option>
+                  <option value="1">High</option>
+                  <option value="2">Urgent</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2 space-y-1.5 group">
+                <label className="text-sm font-semibold text-[#5F6B76] flex items-center gap-2 group-focus-within:text-[#5B7C99] transition-colors">
+                  <FileText size={14} /> Internal Description
                 </label>
                 <textarea
-                  id="description"
                   {...register('description')}
                   rows={4}
-                  className="w-full px-4 py-2 border border-[#ECEFF1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5B7C99] focus:border-transparent text-[#1C1F23] resize-none"
-                  placeholder="Additional details about the maintenance request"
+                  className="w-full px-4 py-2.5 bg-[#F7F8F9] border border-[#ECEFF1] rounded-xl text-sm font-medium focus:outline-none focus:border-[#5B7C99] focus:bg-white transition-all resize-none shadow-sm"
+                  placeholder="Provide technical details about the issue..."
                 />
               </div>
             </div>
           </section>
 
-          {/* Equipment Section */}
+          {/* Equipment & Assignment */}
           <section>
-            <h2 className="text-lg font-medium text-[#1C1F23] mb-4">
-              Equipment
-            </h2>
-            <div>
-              <label
-                htmlFor="equipmentId"
-                className="block text-sm font-medium text-[#1C1F23] mb-2"
-              >
-                Equipment *
-              </label>
-              <select
-                id="equipmentId"
-                {...register('equipmentId', {
-                  required: 'Equipment is required',
-                })}
-                className="w-full px-4 py-2 border border-[#ECEFF1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5B7C99] focus:border-transparent text-[#1C1F23] bg-white"
-                disabled={!!initialData?.equipmentId}
-              >
-                <option value="">Select equipment</option>
-                {equipment.map((eq) => (
-                  <option key={eq.id} value={eq.id}>
-                    {eq.name} {eq.serialNumber ? `(${eq.serialNumber})` : ''}
-                  </option>
-                ))}
-              </select>
-              {errors.equipmentId && (
-                <p className="mt-1 text-sm text-[#A14A4A]">
-                  {errors.equipmentId.message}
-                </p>
-              )}
-
-              {selectedEquipment && (
-                <div className="mt-4 p-4 bg-[#F7F8F9] rounded-lg">
-                  <p className="text-sm text-[#5F6B76]">
-                    <span className="font-medium text-[#1C1F23]">Serial:</span>{' '}
-                    {selectedEquipment.serialNumber}
-                  </p>
-                  {selectedEquipment.location && (
-                    <p className="text-sm text-[#5F6B76] mt-1">
-                      <span className="font-medium text-[#1C1F23]">
-                        Location:
-                      </span>{' '}
-                      {selectedEquipment.location}
-                    </p>
-                  )}
-                </div>
-              )}
+            <div className="flex items-center gap-2 mb-6">
+              <span className="w-1 h-6 bg-[#5B7C99] rounded-full"></span>
+              <h2 className="text-lg font-bold text-[#1C1F23]">Equipment & Assignment</h2>
             </div>
-          </section>
 
-          {/* Schedule Section */}
-          <section>
-            <h2 className="text-lg font-medium text-[#1C1F23] mb-4">
-              Schedule
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="scheduledDate"
-                  className="block text-sm font-medium text-[#1C1F23] mb-2"
-                >
-                  Scheduled Date
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="space-y-1.5 group">
+                <label className="text-sm font-semibold text-[#5F6B76] flex items-center gap-2 group-focus-within:text-[#5B7C99] transition-colors">
+                  <Tag size={14} /> Equipment *
                 </label>
-                <input
-                  id="scheduledDate"
-                  type="date"
-                  {...register('scheduledDate')}
-                  className="w-full px-4 py-2 border border-[#ECEFF1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5B7C99] focus:border-transparent text-[#1C1F23]"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="duration"
-                  className="block text-sm font-medium text-[#1C1F23] mb-2"
+                <select
+                  {...register('equipmentId', { required: 'Equipment is required' })}
+                  disabled={!!initialData?.equipmentId}
+                  className="w-full px-4 py-2.5 bg-[#F7F8F9] border border-[#ECEFF1] rounded-xl text-sm font-medium focus:outline-none focus:border-[#5B7C99] focus:bg-white transition-all appearance-none shadow-sm disabled:opacity-50"
                 >
-                  Duration (hours)
-                </label>
-                <input
-                  id="duration"
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  {...register('duration', {
-                    valueAsNumber: true,
-                    min: { value: 0, message: 'Duration must be positive' },
-                  })}
-                  className="w-full px-4 py-2 border border-[#ECEFF1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5B7C99] focus:border-transparent text-[#1C1F23]"
-                  placeholder="0"
-                />
-                {errors.duration && (
-                  <p className="mt-1 text-sm text-[#A14A4A]">
-                    {errors.duration.message}
-                  </p>
+                  <option value="">Select an asset...</option>
+                  {equipment.map((eq) => (
+                    <option key={eq.id} value={eq.id}>
+                      {eq.name} ({eq.serialNumber})
+                    </option>
+                  ))}
+                </select>
+                {selectedEquipment && (
+                  <div className="mt-3 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                    <p className="text-[11px] font-bold text-[#5B7C99] uppercase tracking-wider mb-1">Asset Location</p>
+                    <p className="text-sm font-semibold text-[#1C1F23]">{selectedEquipment.location || 'Unknown'}</p>
+                  </div>
                 )}
               </div>
+
+              <div className="space-y-1.5 group">
+                <label className="text-sm font-semibold text-[#5F6B76] flex items-center gap-2 group-focus-within:text-[#5B7C99] transition-colors">
+                  <User size={14} /> Assign Technician
+                </label>
+                <select
+                  {...register('technicianId')}
+                  className="w-full px-4 py-2.5 bg-[#F7F8F9] border border-[#ECEFF1] rounded-xl text-sm font-medium focus:outline-none focus:border-[#5B7C99] focus:bg-white transition-all appearance-none shadow-sm"
+                >
+                  <option value="">Select Technician...</option>
+                  {technicians.map((tech) => (
+                    <option key={tech.id} value={tech.id}>{tech.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </section>
 
-          {/* Assignment Section */}
+          {/* Schedule */}
           <section>
-            <h2 className="text-lg font-medium text-[#1C1F23] mb-4">
-              Assignment
-            </h2>
-            <div>
-              <label
-                htmlFor="technicianId"
-                className="block text-sm font-medium text-[#1C1F23] mb-2"
-              >
-                Technician
-              </label>
-              <select
-                id="technicianId"
-                {...register('technicianId')}
-                className="w-full px-4 py-2 border border-[#ECEFF1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5B7C99] focus:border-transparent text-[#1C1F23] bg-white"
-              >
-                <option value="">Unassigned</option>
-                {technicians.map((tech) => (
-                  <option key={tech.id} value={tech.id}>
-                    {tech.name}
-                  </option>
-                ))}
-              </select>
+            <div className="flex items-center gap-2 mb-6">
+              <span className="w-1 h-6 bg-[#5B7C99] rounded-full"></span>
+              <h2 className="text-lg font-bold text-[#1C1F23]">Schedule & Planning</h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="space-y-1.5 group">
+                <label className="text-sm font-semibold text-[#5F6B76] flex items-center gap-2 group-focus-within:text-[#5B7C99] transition-colors">
+                  <Calendar size={14} /> Scheduled Date
+                </label>
+                <input
+                  type="date"
+                  {...register('scheduledDate')}
+                  className="w-full px-4 py-2.5 bg-[#F7F8F9] border border-[#ECEFF1] rounded-xl text-sm font-medium focus:outline-none focus:border-[#5B7C99] focus:bg-white transition-all shadow-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5 group">
+                <label className="text-sm font-semibold text-[#5F6B76] flex items-center gap-2 group-focus-within:text-[#5B7C99] transition-colors">
+                  <Clock size={14} /> Estimated Duration (Hrs)
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  {...register('duration')}
+                  className="w-full px-4 py-2.5 bg-[#F7F8F9] border border-[#ECEFF1] rounded-xl text-sm font-medium focus:outline-none focus:border-[#5B7C99] focus:bg-white transition-all shadow-sm"
+                  placeholder="0.0"
+                />
+              </div>
             </div>
           </section>
 
-          {/* Form Actions */}
-          <div className="flex gap-4 pt-4 border-t border-[#ECEFF1]">
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-4 pt-8 border-t border-[#ECEFF1]">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-6 py-3 font-bold text-[#5F6B76] hover:text-[#1C1F23] transition-colors flex items-center gap-2"
+            >
+              Discard
+            </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-[#5B7C99] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-medium"
+              className="px-10 py-3 bg-[#5B7C99] text-white rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-500/10 hover:opacity-95 transition-all"
             >
-              {initialData ? 'Update Request' : 'Create Request'}
+              <Save size={20} />
+              {initialData ? 'Save Changes' : 'Confirm Request'}
             </button>
-            {onCancel && (
-              <button
-                type="button"
-                onClick={onCancel}
-                className="px-6 py-3 bg-white text-[#5F6B76] border border-[#ECEFF1] rounded-lg hover:bg-[#ECEFF1] transition-colors duration-150 font-medium"
-              >
-                Cancel
-              </button>
-            )}
           </div>
         </form>
       </div>
     </div>
   );
 }
-

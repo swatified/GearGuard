@@ -15,6 +15,14 @@ export interface Equipment {
   location?: string;
   maintenanceTeamId?: string;
   active: boolean;
+  // Enhanced fields for dashboard
+  status?: 'operational' | 'down' | 'maintenance_required';
+  healthScore?: number;
+  departmentId?: string;
+  assignedToUserId?: string;
+  category?: string;
+  purchaseDate?: string;
+  warrantyUntil?: string;
 }
 
 export interface MaintenanceTeam {
@@ -45,5 +53,6 @@ export interface MaintenanceRequest {
   isOverdue?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  reportedByUserId?: string;
 }
 

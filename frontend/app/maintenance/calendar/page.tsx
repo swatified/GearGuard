@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import CalendarView from '@/app/components/maintenance/CalendarView';
+import { useRequireAuth } from '@/app/hooks/useRequireAuth';
 import type { MaintenanceRequest } from '@/app/types/maintenance';
 
 // Mock data for demonstration
@@ -65,6 +66,16 @@ const mockRequests: MaintenanceRequest[] = [
 ];
 
 export default function CalendarPage() {
+  const { loading } = useRequireAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F8F9]">
+        <div className="text-[#5F6B76]">Loading...</div>
+      </div>
+    );
+  }
+
   const handleDateClick = (date: Date, requests: MaintenanceRequest[]) => {
     console.log('Date clicked:', date, requests);
   };

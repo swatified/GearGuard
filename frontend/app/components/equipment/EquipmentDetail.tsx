@@ -2,7 +2,23 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import type { Equipment, MaintenanceRequest } from '@/app/types/maintenance';
+import type { Equipment, MaintenanceRequest, Technician } from '@/app/types/maintenance';
+import {
+  Calendar,
+  MapPin,
+  Tag,
+  Users,
+  User,
+  Toolbox,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  Trash2,
+  ChevronRight,
+  ClipboardList,
+  Wrench
+} from 'lucide-react';
+import Link from 'next/link';
 
 interface EquipmentDetailProps {
   equipment: Equipment & {
@@ -13,6 +29,7 @@ interface EquipmentDetailProps {
     department?: { id: string; name: string };
     requestCount?: number;
     openRequestCount?: number;
+    technician?: Technician;
   };
   requests?: MaintenanceRequest[];
   onMaintenanceClick?: () => void;
@@ -32,215 +49,258 @@ export default function EquipmentDetail({
     (req) => req.state !== 'repaired' && req.state !== 'scrap'
   );
 
+  const getStatusColor = (state: string) => {
+    switch (state) {
+      case 'repaired': return 'bg-green-50 text-green-600 border-green-100';
+      case 'scrap': return 'bg-red-50 text-red-600 border-red-100';
+      case 'in_progress': return 'bg-blue-50 text-blue-600 border-blue-100';
+      default: return 'bg-gray-50 text-gray-600 border-gray-100';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#F7F8F9]">
-      {/* Header */}
-      <div className={`bg-white border-b border-[#ECEFF1] ${isScrap ? 'scrap-state' : ''}`}>
-        <div className="max-w-6xl mx-auto px-6 py-8">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold text-[#1C1F23] mb-2">
-                {equipment.name}
-              </h1>
-              <p className="text-[#5F6B76] text-lg">
-                Serial: {equipment.serialNumber}
-              </p>
-              {isScrap && (
-                <span className="inline-block mt-3 px-3 py-1 bg-[#ECEFF1] text-[#5F6B76] rounded text-sm font-medium">
-                  Scrap
-                </span>
-              )}
-            </div>
-            <button
-              onClick={onMaintenanceClick}
-              className="px-6 py-3 bg-[#5B7C99] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-medium flex items-center gap-2 relative"
-            >
-              Maintenance
-              {openRequests.length > 0 && (
-                <span className="absolute -top-2 -right-2 w-6 h-6 bg-[#A14A4A] text-white rounded-full text-xs flex items-center justify-center font-semibold">
-                  {openRequests.length}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#F7F8F9] pt-20 pb-12">
+      <div className="max-w-6xl mx-auto px-6">
+        {/* Breadcrumbs */}
+        <nav className="flex items-center gap-2 text-sm text-[#90A4AE] mb-6">
+          <Link href="/equipment" className="hover:text-[#5B7C99] transition-colors">Equipment</Link>
+          <ChevronRight size={14} />
+          <span className="text-[#5F6B76] font-medium">{equipment.name}</span>
+        </nav>
 
-      {/* Tabs */}
-      <div className="bg-white border-b border-[#ECEFF1]">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex gap-8">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`py-4 px-1 border-b-2 transition-colors duration-150 font-medium text-sm ${
-                activeTab === 'overview'
-                  ? 'border-[#5B7C99] text-[#5B7C99]'
-                  : 'border-transparent text-[#5F6B76] hover:text-[#1C1F23]'
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`py-4 px-1 border-b-2 transition-colors duration-150 font-medium text-sm ${
-                activeTab === 'history'
-                  ? 'border-[#5B7C99] text-[#5B7C99]'
-                  : 'border-transparent text-[#5F6B76] hover:text-[#1C1F23]'
-              }`}
-            >
-              Maintenance History
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {activeTab === 'overview' ? (
-          <div className={`bg-white rounded-lg p-8 ${isScrap ? 'scrap-state' : ''}`}>
-            <div className="grid md:grid-cols-2 gap-8">
+        {/* Enhanced Header */}
+        <div className={`bg-white rounded-2xl p-8 border border-[#ECEFF1] shadow-[0_1px_2px_rgba(0,0,0,0.05)] mb-8 transition-all ${isScrap ? 'opacity-75 grayscale-[0.5]' : ''}`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-start gap-5">
+              <div className="p-4 bg-[#F7F8F9] rounded-2xl text-[#5B7C99]">
+                <Toolbox size={32} />
+              </div>
               <div>
-                <h2 className="text-lg font-semibold text-[#1C1F23] mb-6">
-                  Equipment Details
-                </h2>
-                <dl className="space-y-4">
-                  {equipment.location && (
-                    <div>
-                      <dt className="text-sm font-medium text-[#5F6B76] mb-1">
-                        Location
+                <div className="flex items-center gap-3">
+                  <h1 className="text-3xl font-bold text-[#1C1F23]">{equipment.name}</h1>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${equipment.active ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'
+                    }`}>
+                    {equipment.active ? 'Active' : 'Scrapped'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 mt-2 text-[#5F6B76]">
+                  <span className="flex items-center gap-1.5 text-sm">
+                    <Tag size={14} className="text-[#90A4AE]" />
+                    {equipment.serialNumber}
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#ECEFF1]"></span>
+                  <span className="flex items-center gap-1.5 text-sm">
+                    <MapPin size={14} className="text-[#90A4AE]" />
+                    {equipment.location}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Smart Buttons */}
+              <button
+                onClick={() => setActiveTab('history')}
+                className="flex flex-col items-center justify-center w-24 h-24 rounded-2xl bg-white border border-[#ECEFF1] hover:border-[#5B7C99] hover:bg-blue-50/30 transition-all group"
+              >
+                <span className="text-2xl font-bold text-[#1C1F23] group-hover:text-[#5B7C99]">{equipment.requestCount || requests.length}</span>
+                <span className="text-[10px] font-semibold text-[#90A4AE] uppercase mt-1">Total REQS</span>
+              </button>
+
+              <button
+                onClick={onMaintenanceClick}
+                className="flex flex-col items-center justify-center w-24 h-24 rounded-2xl bg-[#5B7C99] text-white hover:opacity-95 transition-all shadow-md relative"
+              >
+                <Wrench size={24} className="mb-1" />
+                <span className="text-[10px] font-bold uppercase tracking-wide">Maintenance</span>
+                {openRequests.length > 0 && (
+                  <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center font-bold border-2 border-white">
+                    {openRequests.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex gap-8 mb-8 border-b border-[#ECEFF1] px-2">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`pb-4 px-1 border-b-2 transition-all font-semibold text-sm flex items-center gap-2 ${activeTab === 'overview'
+              ? 'border-[#5B7C99] text-[#5B7C99]'
+              : 'border-transparent text-[#90A4AE] hover:text-[#5F6B76]'
+              }`}
+          >
+            <ClipboardList size={18} />
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`pb-4 px-1 border-b-2 transition-all font-semibold text-sm flex items-center gap-2 ${activeTab === 'history'
+              ? 'border-[#5B7C99] text-[#5B7C99]'
+              : 'border-transparent text-[#90A4AE] hover:text-[#5F6B76]'
+              }`}
+          >
+            <Clock size={18} />
+            Maintenance History
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+          {activeTab === 'overview' ? (
+            <div className="grid lg:grid-cols-3 gap-8">
+              {/* Technical Information */}
+              <div className="lg:col-span-2 space-y-8">
+                <div className="bg-white rounded-2xl p-8 border border-[#ECEFF1] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                  <h2 className="text-xl font-bold text-[#1C1F23] mb-8 flex items-center gap-2">
+                    <span className="w-1.5 h-6 bg-[#5B7C99] rounded-full"></span>
+                    Technical Information
+                  </h2>
+                  <div className="grid md:grid-cols-2 gap-y-8 gap-x-12">
+                    <div className="space-y-1.5">
+                      <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
+                        <MapPin size={12} />
+                        Physical Location
                       </dt>
-                      <dd className="text-[#1C1F23]">{equipment.location}</dd>
+                      <dd className="text-[#1C1F23] font-medium">{equipment.location || 'Not Specified'}</dd>
                     </div>
-                  )}
-                  {equipment.department && (
-                    <div>
-                      <dt className="text-sm font-medium text-[#5F6B76] mb-1">
+                    <div className="space-y-1.5">
+                      <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
+                        <Users size={12} />
                         Department
                       </dt>
-                      <dd className="text-[#1C1F23]">
-                        {equipment.department.name}
-                      </dd>
+                      <dd className="text-[#1C1F23] font-medium">{equipment.department?.name || 'Unassigned'}</dd>
                     </div>
-                  )}
-                  {equipment.purchaseDate && (
-                    <div>
-                      <dt className="text-sm font-medium text-[#5F6B76] mb-1">
+                    <div className="space-y-1.5">
+                      <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
+                        <Calendar size={12} />
                         Purchase Date
                       </dt>
-                      <dd className="text-[#1C1F23]">
-                        {format(new Date(equipment.purchaseDate), 'MMM d, yyyy')}
+                      <dd className="text-[#1C1F23] font-medium">
+                        {equipment.purchaseDate ? format(new Date(equipment.purchaseDate), 'MMMM d, yyyy') : 'N/A'}
                       </dd>
                     </div>
-                  )}
-                  {equipment.warrantyStartDate && equipment.warrantyEndDate && (
-                    <div>
-                      <dt className="text-sm font-medium text-[#5F6B76] mb-1">
-                        Warranty Period
+                    <div className="space-y-1.5">
+                      <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
+                        <User size={12} />
+                        Technician
                       </dt>
-                      <dd className="text-[#1C1F23]">
-                        {format(
-                          new Date(equipment.warrantyStartDate),
-                          'MMM d, yyyy'
-                        )}{' '}
-                        -{' '}
-                        {format(
-                          new Date(equipment.warrantyEndDate),
-                          'MMM d, yyyy'
-                        )}
+                      <dd className="text-[#1C1F23] font-medium font-semibold">{equipment.technician?.name || 'Not assigned'}</dd>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl p-8 border border-[#ECEFF1] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                  <h2 className="text-xl font-bold text-[#1C1F23] mb-8 flex items-center gap-2">
+                    <span className="w-1.5 h-6 bg-[#5B7C99] rounded-full"></span>
+                    Warranty Information
+                  </h2>
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div className="p-4 bg-[#F7F8F9] rounded-xl border border-[#ECEFF1]">
+                      <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider mb-2">Coverage Start</dt>
+                      <dd className="text-[#1C1F23] font-semibold">
+                        {equipment.warrantyStartDate ? format(new Date(equipment.warrantyStartDate), 'MMM d, yyyy') : 'No coverage'}
                       </dd>
                     </div>
-                  )}
-                </dl>
+                    <div className="p-4 bg-[#F7F8F9] rounded-xl border border-[#ECEFF1]">
+                      <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider mb-2">Coverage End</dt>
+                      <dd className="text-[#1C1F23] font-semibold text-red-600">
+                        {equipment.warrantyEndDate ? format(new Date(equipment.warrantyEndDate), 'MMM d, yyyy') : 'No coverage'}
+                      </dd>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <h2 className="text-lg font-semibold text-[#1C1F23] mb-6">
-                  Maintenance Summary
-                </h2>
-                <dl className="space-y-4">
-                  <div>
-                    <dt className="text-sm font-medium text-[#5F6B76] mb-1">
-                      Total Requests
-                    </dt>
-                    <dd className="text-2xl font-semibold text-[#1C1F23]">
-                      {equipment.requestCount || requests.length}
-                    </dd>
+              {/* Sidebar Stats */}
+              <div className="space-y-8">
+                <div className="bg-white rounded-2xl p-8 border border-[#ECEFF1] shadow-[0_1px_2px_rgba(0,0,0,0.05)] text-center">
+                  <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle2 size={40} className="text-green-500" />
                   </div>
-                  <div>
-                    <dt className="text-sm font-medium text-[#5F6B76] mb-1">
-                      Open Requests
-                    </dt>
-                    <dd className="text-2xl font-semibold text-[#1C1F23]">
-                      {equipment.openRequestCount || openRequests.length}
-                    </dd>
+                  <h3 className="text-lg font-bold text-[#1C1F23]">Health Score</h3>
+                  <p className="text-sm text-[#5F6B76] mt-1 mb-4">Based on maintenance history</p>
+                  <div className="text-4xl font-extrabold text-[#1C1F23]">92%</div>
+                  <div className="mt-6 pt-6 border-t border-[#ECEFF1]">
+                    <div className="flex justify-between text-sm mb-2 font-medium">
+                      <span className="text-[#5F6B76]">Reliability</span>
+                      <span className="text-[#4CAF50]">High</span>
+                    </div>
+                    <div className="w-full h-2 bg-[#F7F8F9] rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500 w-[92%] transition-all"></div>
+                    </div>
                   </div>
-                </dl>
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg p-8">
-            <h2 className="text-lg font-semibold text-[#1C1F23] mb-6">
-              Maintenance History
-            </h2>
-            {requests.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-[#5F6B76]">
-                  No maintenance history available for this equipment.
-                </p>
+          ) : (
+            <div className="bg-white rounded-2xl border border-[#ECEFF1] overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <div className="p-8 border-b border-[#ECEFF1] flex items-center justify-between">
+                <h2 className="text-xl font-bold text-[#1C1F23]">Maintenance Logs</h2>
+                <div className="flex items-center gap-2 text-sm text-[#90A4AE]">
+                  <AlertCircle size={16} />
+                  Found {requests.length} logs
+                </div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {requests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="p-4 border border-[#ECEFF1] rounded-lg hover:border-[#5B7C99] transition-colors duration-150"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="font-medium text-[#1C1F23]">
-                          {request.subject}
-                        </h3>
-                        <p className="text-sm text-[#5F6B76] mt-1">
-                          {request.name}
-                        </p>
-                      </div>
-                      <span
-                        className={`px-3 py-1 rounded text-xs font-medium ${
-                          request.state === 'repaired'
-                            ? 'bg-[#6F8F7A] text-white'
-                            : request.state === 'scrap'
-                            ? 'bg-[#ECEFF1] text-[#5F6B76]'
-                            : request.state === 'in_progress'
-                            ? 'bg-[#5B7C99] text-white'
-                            : 'bg-[#ECEFF1] text-[#5F6B76]'
-                        }`}
-                      >
-                        {request.state.replace('_', ' ')}
-                      </span>
-                    </div>
-                    {request.scheduledDate && (
-                      <p className="text-sm text-[#5F6B76]">
-                        Scheduled:{' '}
-                        {format(
-                          new Date(request.scheduledDate),
-                          'MMM d, yyyy'
-                        )}
-                      </p>
-                    )}
-                    {request.technician && (
-                      <p className="text-sm text-[#5F6B76] mt-1">
-                        Technician: {request.technician.name}
-                      </p>
-                    )}
+
+              {requests.length === 0 ? (
+                <div className="p-20 text-center flex flex-col items-center">
+                  <div className="w-16 h-16 bg-[#F7F8F9] rounded-full flex items-center justify-center mb-4 text-[#90A4AE]">
+                    <Clock size={32} />
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                  <h3 className="text-lg font-medium text-[#5F6B76]">No Logs Yet</h3>
+                  <p className="text-sm text-[#90A4AE] mt-1">This equipment hasn't required maintenance yet.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#ECEFF1]">
+                  {requests.map((request) => (
+                    <div key={request.id} className="p-6 hover:bg-[#F7F8F9]/50 transition-colors group">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <div className={`p-2.5 rounded-lg border ${getStatusColor(request.state)}`}>
+                            {request.state === 'repaired' ? <CheckCircle2 size={20} /> :
+                              request.state === 'scrap' ? <Trash2 size={20} /> : <Wrench size={20} />}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-[#1C1F23] group-hover:text-[#5B7C99] transition-colors">
+                              {request.subject}
+                            </h3>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-[#90A4AE] font-medium">
+                              <span className="uppercase tracking-wider">{request.name}</span>
+                              <span className="w-1 h-1 rounded-full bg-[#ECEFF1]"></span>
+                              <span className="flex items-center gap-1">
+                                <Calendar size={12} />
+                                {request.scheduledDate ? format(new Date(request.scheduledDate), 'MMM d, yyyy') : 'No Date'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-6">
+                          {request.technician && (
+                            <div className="text-right hidden md:block">
+                              <p className="text-xs text-[#90A4AE] font-bold uppercase tracking-wider mb-0.5">Technician</p>
+                              <p className="text-sm font-semibold text-[#1C1F23]">{request.technician.name}</p>
+                            </div>
+                          )}
+                          <Link
+                            href={`/maintenance/${request.id}`}
+                            className="p-2 text-[#90A4AE] hover:text-[#5B7C99] hover:bg-blue-50 rounded-lg transition-all"
+                          >
+                            <ChevronRight size={20} />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-

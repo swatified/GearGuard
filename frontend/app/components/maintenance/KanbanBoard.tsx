@@ -21,6 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import KanbanCard from './KanbanCard';
+import { MoreHorizontal, Plus, AlertCircle, CheckCircle2, Wrench, Trash2 } from 'lucide-react';
 import type {
   MaintenanceRequest,
   MaintenanceRequestState,
@@ -35,11 +36,11 @@ interface KanbanBoardProps {
   onCardClick?: (request: MaintenanceRequest) => void;
 }
 
-const COLUMNS: { id: MaintenanceRequestState; label: string }[] = [
-  { id: 'new', label: 'New' },
-  { id: 'in_progress', label: 'In Progress' },
-  { id: 'repaired', label: 'Repaired' },
-  { id: 'scrap', label: 'Scrap' },
+const COLUMNS: { id: MaintenanceRequestState; label: string; icon: any; color: string }[] = [
+  { id: 'new', label: 'New', icon: AlertCircle, color: 'text-[#90A4AE]' },
+  { id: 'in_progress', label: 'In Progress', icon: Wrench, color: 'text-[#5B7C99]' },
+  { id: 'repaired', label: 'Repaired', icon: CheckCircle2, color: 'text-green-500' },
+  { id: 'scrap', label: 'Scrap', icon: Trash2, color: 'text-red-400' },
 ];
 
 function SortableCard({
@@ -61,11 +62,12 @@ function SortableCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.3 : 1,
+    zIndex: isDragging ? 100 : 1,
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="mb-4 touch-none">
       <KanbanCard request={request} onCardClick={onCardClick} />
     </div>
   );
@@ -76,42 +78,54 @@ function DroppableColumn({
   requests,
   onCardClick,
 }: {
-  column: { id: MaintenanceRequestState; label: string };
+  column: { id: MaintenanceRequestState; label: string; icon: any; color: string };
   requests: MaintenanceRequest[];
   onCardClick?: (request: MaintenanceRequest) => void;
 }) {
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: column.id,
   });
 
+  const Icon = column.icon;
+
   return (
-    <div className="flex-1 min-w-0">
-      <div className="mb-4">
-        <h2 className="text-sm font-semibold text-[#1C1F23]">{column.label}</h2>
-        <span className="text-xs text-[#5F6B76]">{requests.length}</span>
+    <div className="flex-1 min-w-[280px] flex flex-col h-full">
+      <div className="flex items-center justify-between mb-4 px-2">
+        <div className="flex items-center gap-2">
+          <div className={`p-1.5 rounded-md bg-white border border-[#ECEFF1] ${column.color}`}>
+            <Icon size={16} />
+          </div>
+          <h2 className="text-sm font-bold text-[#1C1F23] uppercase tracking-wider">{column.label}</h2>
+          <span className="text-[10px] font-bold bg-[#ECEFF1] text-[#5F6B76] px-2 py-0.5 rounded-full">
+            {requests.length}
+          </span>
+        </div>
+        <button className="text-[#90A4AE] hover:text-[#5F6B76] transition-colors p-1">
+          <MoreHorizontal size={18} />
+        </button>
       </div>
+
       <div
         ref={setNodeRef}
-        className="bg-[#ECEFF1] rounded-lg p-3 min-h-[400px]"
+        className={`flex-1 overflow-y-auto overflow-x-hidden p-3 rounded-2xl border-2 transition-all duration-200 min-h-[500px] ${isOver ? 'bg-[#5B7C99]/5 border-[#5B7C99] border-dashed' : 'bg-[#F1F3F5] border-transparent'
+          }`}
       >
         <SortableContext
           items={requests.map((r) => r.id)}
           strategy={verticalListSortingStrategy}
         >
-          {requests.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-sm text-[#5F6B76]">
-                No requests in this stage
-              </p>
+          {requests.map((request) => (
+            <SortableCard
+              key={request.id}
+              request={request}
+              onCardClick={onCardClick}
+            />
+          ))}
+
+          {requests.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-[#CFD8DC] rounded-xl text-[#90A4AE] bg-white/50">
+              <p className="text-xs font-medium">Empty Stage</p>
             </div>
-          ) : (
-            requests.map((request) => (
-              <SortableCard
-                key={request.id}
-                request={request}
-                onCardClick={onCardClick}
-              />
-            ))
           )}
         </SortableContext>
       </div>
@@ -133,9 +147,7 @@ export default function KanbanBoard({
     scrap: [],
   });
 
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeRequest, setActiveRequest] =
-    useState<MaintenanceRequest | null>(null);
+  const [activeRequest, setActiveRequest] = useState<MaintenanceRequest | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -161,7 +173,6 @@ export default function KanbanBoard({
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    setActiveId(active.id as string);
     const request = requests.find((r) => r.id === active.id);
     setActiveRequest(request || null);
   };
@@ -170,23 +181,34 @@ export default function KanbanBoard({
     const { active, over } = event;
 
     if (!over) {
-      setActiveId(null);
       setActiveRequest(null);
       return;
     }
 
     const requestId = active.id as string;
-    const newState = over.id as MaintenanceRequestState;
+    const overId = over.id as string;
+
+    // Determine the new state
+    let newState: MaintenanceRequestState | null = null;
 
     // Check if dropped on a column
-    if (COLUMNS.some((col) => col.id === newState)) {
+    if (COLUMNS.some((col) => col.id === overId)) {
+      newState = overId as MaintenanceRequestState;
+    } else {
+      // Check if dropped on another card
+      const overRequest = requests.find((r) => r.id === overId);
+      if (overRequest) {
+        newState = overRequest.state;
+      }
+    }
+
+    if (newState) {
       const request = requests.find((r) => r.id === requestId);
       if (request && request.state !== newState) {
         onStateChange?.(requestId, newState);
       }
     }
 
-    setActiveId(null);
     setActiveRequest(null);
   };
 
@@ -197,7 +219,7 @@ export default function KanbanBoard({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-6 p-6 bg-[#F7F8F9] min-h-screen">
+      <div className="flex gap-6 h-full overflow-x-auto pb-4 scrollbar-hide">
         {COLUMNS.map((column) => (
           <DroppableColumn
             key={column.id}
@@ -207,9 +229,13 @@ export default function KanbanBoard({
           />
         ))}
       </div>
-      <DragOverlay>
+
+      <DragOverlay dropAnimation={{
+        duration: 250,
+        easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+      }}>
         {activeRequest ? (
-          <div className="opacity-90">
+          <div className="rotate-2 scale-105 opacity-90 shadow-2xl ring-2 ring-[#5B7C99] rounded-xl">
             <KanbanCard request={activeRequest} />
           </div>
         ) : null}
@@ -217,4 +243,3 @@ export default function KanbanBoard({
     </DndContext>
   );
 }
-

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import KanbanBoard from '@/app/components/maintenance/KanbanBoard';
+import { useRequireAuth } from '@/app/hooks/useRequireAuth';
+import DashboardShell from '@/app/components/layout/DashboardShell';
 import type {
   MaintenanceRequest,
   MaintenanceRequestState,
@@ -68,7 +70,16 @@ const mockRequests: MaintenanceRequest[] = [
 ];
 
 export default function MaintenancePage() {
+  const { loading } = useRequireAuth();
   const [requests, setRequests] = useState<MaintenanceRequest[]>(mockRequests);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F8F9]">
+        <div className="text-[#5F6B76]">Loading...</div>
+      </div>
+    );
+  }
 
   const handleStateChange = (
     requestId: string,
@@ -89,11 +100,15 @@ export default function MaintenancePage() {
   };
 
   return (
-    <KanbanBoard
-      requests={requests}
-      onStateChange={handleStateChange}
-      onCardClick={handleCardClick}
-    />
+    <DashboardShell>
+      <div className="h-[calc(100vh-80px)] overflow-hidden">
+        <KanbanBoard
+          requests={requests}
+          onStateChange={handleStateChange}
+          onCardClick={handleCardClick}
+        />
+      </div>
+    </DashboardShell>
   );
 }
 

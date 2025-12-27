@@ -3,6 +3,7 @@
 import MaintenanceRequestForm, {
   MaintenanceRequestFormData,
 } from '@/app/components/maintenance/MaintenanceRequestForm';
+import { useRequireAuth } from '@/app/hooks/useRequireAuth';
 
 // Mock data
 const mockEquipment = [
@@ -31,6 +32,16 @@ const mockTechnicians = [
 ];
 
 export default function NewRequestPage() {
+  const { loading } = useRequireAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F8F9]">
+        <div className="text-[#5F6B76]">Loading...</div>
+      </div>
+    );
+  }
+
   const handleSubmit = async (data: MaintenanceRequestFormData) => {
     console.log('Form submitted:', data);
     // TODO: Make API call to create request

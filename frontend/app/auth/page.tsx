@@ -15,7 +15,7 @@ const loginSchema = z.object({
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
   role: z.enum(['user', 'technician', 'manager', 'admin']).optional(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -244,7 +244,7 @@ export default function AuthPage() {
                       type={showPassword ? 'text' : 'password'}
                       {...registerRegister('password')}
                       className="w-full px-4 py-2.5 border border-[#ECEFF1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5B7C99] focus:border-transparent transition-all text-[#1C1F23] bg-white pr-11"
-                      placeholder="Min 8 characters"
+                      placeholder="Min 6 characters"
                     />
                     <button
                       type="button"

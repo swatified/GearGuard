@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await authService.login(data);
       setUser(response.user);
-      router.push('/');
+      router.push('/dashboard');
     } catch (error) {
       throw error;
     }
@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await authService.register(data);
       setUser(response.user);
-      router.push('/');
+      router.push('/dashboard');
     } catch (error) {
       throw error;
     }
