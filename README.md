@@ -2,6 +2,8 @@
 
 A comprehensive maintenance management system that allows companies to track assets (machines, vehicles, computers) and manage maintenance requests efficiently. The system seamlessly connects Equipment (what is broken), Teams (who fix it), and Requests (the work to be done).
 
+<img width="1277" height="710" alt="image" src="https://github.com/user-attachments/assets/f7b68fb5-a69d-4c23-8213-6a8dbe6709b2" />
+
 ---
 
 ## 📋 Project Overview
