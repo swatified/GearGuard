@@ -1,0 +1,231 @@
+// GearGuard Maintenance Tracker - Database Structure
+
+// ============================================================================
+// MAINTENANCE TEAM
+// Represents specialized maintenance teams (Mechanics, Electricians, IT Support)
+// ============================================================================
+Table maintenance_team {
+  id integer [primary key, increment]
+  name varchar(255) [not null, note: 'Team Name (e.g., Mechanics, IT Support)']
+  active boolean [default: true, note: 'Archive/Unarchive']
+  create_uid integer [note: 'Created By']
+  create_date timestamp [default: `CURRENT_TIMESTAMP`]
+  write_uid integer [note: 'Last Updated By']
+  write_date timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Maintenance teams that handle repair and maintenance work'
+}
+
+// ============================================================================
+// MAINTENANCE TEAM MEMBERS (Many-to-Many Relationship)
+// Links teams to users/technicians
+// ============================================================================
+Table maintenance_team_member_rel {
+  team_id integer [primary key, note: 'Team ID']
+  user_id integer [primary key, note: 'User/Technician ID']
+  
+  Note: 'Many-to-Many relationship between teams and users'
+}
+
+// ============================================================================
+// EQUIPMENT
+// Central database for all company assets (machines, vehicles, computers)
+// ============================================================================
+Table maintenance_equipment {
+  id integer [primary key, increment]
+  name varchar(255) [not null, note: 'Equipment Name']
+  serial_number varchar(255) [unique, note: 'Serial Number']
+  purchase_date date [note: 'Purchase Date']
+  warranty_start_date date [note: 'Warranty Start Date']
+  warranty_end_date date [note: 'Warranty End Date']
+  location text [note: 'Physical Location']
+  
+  // Foreign Keys
+  department_id integer [note: 'Department (hr.department)']
+  employee_id integer [note: 'Assigned Employee (hr.employee)']
+  maintenance_team_id integer [not null, note: 'Maintenance Team']
+  technician_id integer [note: 'Default Technician (res.users)']
+  
+  // Status Fields
+  active boolean [default: true, note: 'Active Status (False if scrapped)']
+  scrap_date timestamp [note: 'Date when equipment was scrapped']
+  scrap_reason text [note: 'Reason for scrapping']
+  note text [note: 'Additional Notes']
+  
+  // Computed Fields (shown for reference)
+  request_count integer [default: 0, note: 'Count of related requests (computed)']
+  open_request_count integer [default: 0, note: 'Count of open requests (computed)']
+  
+  // Audit Fields
+  create_uid integer [note: 'Created By']
+  create_date timestamp [default: `CURRENT_TIMESTAMP`]
+  write_uid integer [note: 'Last Updated By']
+  write_date timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Company assets that require maintenance'
+}
+
+// ============================================================================
+// MAINTENANCE REQUEST
+// Transactional model handling the lifecycle of repair/maintenance jobs
+// ============================================================================
+Table maintenance_request {
+  id integer [primary key, increment]
+  name varchar(255) [unique, not null, note: 'Request Sequence (MR00001, MR00002)']
+  subject varchar(255) [not null, note: 'What is wrong? (e.g., Leaking Oil)']
+  description text [note: 'Detailed Description']
+  
+  // Foreign Keys
+  equipment_id integer [not null, note: 'Equipment requiring maintenance']
+  maintenance_team_id integer [not null, note: 'Team assigned (auto-filled from equipment)']
+  technician_id integer [note: 'Assigned Technician (filtered by team)']
+  user_id integer [note: 'Requested By (res.users)']
+  stage_id integer [not null, note: 'Current Stage']
+  currency_id integer [note: 'Currency for costs']
+  
+  // Request Details
+  request_type varchar(20) [not null, default: 'corrective', note: 'corrective or preventive']
+  priority varchar(1) [default: '1', note: '0=Low, 1=Normal, 2=High, 3=Urgent']
+  
+  // Scheduling
+  scheduled_date timestamp [note: 'Scheduled Date/Time (for preventive maintenance)']
+  date_request timestamp [default: `CURRENT_TIMESTAMP`, note: 'Request Creation Date']
+  date_start timestamp [note: 'Work Start Date']
+  date_end timestamp [note: 'Work Completion Date']
+  duration decimal(10,2) [default: 0.0, note: 'Hours Spent']
+  
+  // Cost
+  maintenance_cost decimal(15,2) [default: 0.0, note: 'Cost of Maintenance']
+  
+  // Computed Fields
+  state varchar(20) [default: 'new', note: 'new, in_progress, repaired, scrap (computed from stage)']
+  is_overdue boolean [default: false, note: 'True if scheduled_date < today and not completed']
+  
+  // Additional
+  note text [note: 'Additional Notes/Remarks']
+  
+  // Audit Fields
+  create_uid integer [note: 'Created By']
+  create_date timestamp [default: `CURRENT_TIMESTAMP`]
+  write_uid integer [note: 'Last Updated By']
+  write_date timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Maintenance requests/repair jobs with workflow stages'
+}
+
+// ============================================================================
+// MAINTENANCE STAGE
+// Workflow stages for maintenance requests
+// ============================================================================
+Table maintenance_stage {
+  id integer [primary key, increment]
+  name varchar(255) [not null, note: 'Stage Name (New, In Progress, Repaired, Scrap)']
+  sequence integer [default: 10, note: 'Order in Kanban View']
+  fold boolean [default: false, note: 'Fold in Kanban (collapse stage)']
+  is_done boolean [default: false, note: 'Mark stage as done/completed']
+  is_scrap boolean [default: false, note: 'Mark stage as scrap stage']
+  mail_template_id integer [note: 'Email Template for notifications']
+  
+  // Audit Fields
+  create_uid integer [note: 'Created By']
+  create_date timestamp [default: `CURRENT_TIMESTAMP`]
+  write_uid integer [note: 'Last Updated By']
+  write_date timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Workflow stages: New, In Progress, Repaired, Scrap'
+}
+
+// ============================================================================
+// EQUIPMENT CATEGORY (OPTIONAL)
+// Categorization of equipment types
+// ============================================================================
+Table maintenance_equipment_category {
+  id integer [primary key, increment]
+  name varchar(255) [not null, note: 'Category Name (e.g., Machinery, IT Equipment)']
+  parent_id integer [note: 'Parent Category (for hierarchy)']
+  active boolean [default: true]
+  
+  // Audit Fields
+  create_uid integer [note: 'Created By']
+  create_date timestamp [default: `CURRENT_TIMESTAMP`]
+  write_uid integer [note: 'Last Updated By']
+  write_date timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Optional: Equipment categories for better organization'
+}
+
+// ============================================================================
+// EXTERNAL TABLES (Odoo Standard - Referenced Only)
+// ============================================================================
+Table res_users {
+  id integer [primary key]
+  name varchar(255)
+  login varchar(255)
+  
+  Note: 'Odoo standard: Users/Technicians'
+}
+
+Table hr_department {
+  id integer [primary key]
+  name varchar(255)
+  
+  Note: 'Odoo standard: HR Departments'
+}
+
+Table hr_employee {
+  id integer [primary key]
+  name varchar(255)
+  department_id integer
+  
+  Note: 'Odoo standard: Employees'
+}
+
+Table res_currency {
+  id integer [primary key]
+  name varchar(255)
+  symbol varchar(10)
+  
+  Note: 'Odoo standard: Currencies'
+}
+
+// ============================================================================
+// RELATIONSHIPS
+// ============================================================================
+
+// Maintenance Team Relationships
+Ref: maintenance_team_member_rel.team_id > maintenance_team.id [delete: cascade]
+Ref: maintenance_team_member_rel.user_id > res_users.id [delete: cascade]
+
+// Equipment Relationships
+Ref: maintenance_equipment.maintenance_team_id > maintenance_team.id [delete: restrict]
+Ref: maintenance_equipment.department_id > hr_department.id [delete: set null]
+Ref: maintenance_equipment.employee_id > hr_employee.id [delete: set null]
+Ref: maintenance_equipment.technician_id > res_users.id [delete: set null]
+
+// Maintenance Request Relationships
+Ref: maintenance_request.equipment_id > maintenance_equipment.id [delete: restrict, note: 'One equipment has many requests']
+Ref: maintenance_request.maintenance_team_id > maintenance_team.id [delete: restrict, note: 'One team handles many requests']
+Ref: maintenance_request.technician_id > res_users.id [delete: set null, note: 'Technician assigned to request']
+Ref: maintenance_request.user_id > res_users.id [delete: set null, note: 'User who created the request']
+Ref: maintenance_request.stage_id > maintenance_stage.id [delete: restrict, note: 'Current workflow stage']
+Ref: maintenance_request.currency_id > res_currency.id [delete: set null]
+
+// Equipment Category Relationships (Optional)
+Ref: maintenance_equipment_category.parent_id > maintenance_equipment_category.id [delete: set null, note: 'Self-referential for hierarchy']
+
+// HR Employee Relationship
+Ref: hr_employee.department_id > hr_department.id
+
+// ============================================================================
+// INDEXES (Conceptual - shown for clarity)
+// ============================================================================
+
+// Note: In Odoo, indexes are automatically created for foreign keys
+// Additional indexes may be defined in Python models for:
+// - maintenance_equipment.name (for search)
+// - maintenance_equipment.serial_number (unique)
+// - maintenance_request.equipment_id (for filtering)
+// - maintenance_request.scheduled_date (for calendar view)
+// - maintenance_request.request_type (for filtering)
+// - maintenance_request.is_overdue (for overdue indicator)
+
