@@ -1,85 +1,107 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CalendarView from '@/app/components/maintenance/CalendarView';
 import { useRequireAuth } from '@/app/hooks/useRequireAuth';
+import DashboardShell from '@/app/components/layout/DashboardShell';
+import { getCalendarRequests } from '@/app/services/maintenanceRequests';
 import type { MaintenanceRequest } from '@/app/types/maintenance';
 
-// Mock data for demonstration
-const mockRequests: MaintenanceRequest[] = [
-  {
-    id: '1',
-    name: 'MR00001',
-    subject: 'Monthly Inspection',
-    equipmentId: 'eq1',
-    equipment: {
-      id: 'eq1',
-      name: 'CNC Machine 01',
-      serialNumber: 'CNC-001-2024',
-      active: true,
-    },
-    technician: {
-      id: 'tech1',
-      name: 'John Doe',
-    },
-    requestType: 'preventive',
-    state: 'new',
-    scheduledDate: '2024-02-15T10:00:00Z',
-    isOverdue: false,
-  },
-  {
-    id: '2',
-    name: 'MR00002',
-    subject: 'Quarterly Maintenance',
-    equipmentId: 'eq2',
-    equipment: {
-      id: 'eq2',
-      name: 'Drill Press 05',
-      serialNumber: 'DP-005-2024',
-      active: true,
-    },
-    technician: {
-      id: 'tech2',
-      name: 'Jane Smith',
-    },
-    requestType: 'preventive',
-    state: 'in_progress',
-    scheduledDate: '2024-02-15T14:00:00Z',
-    isOverdue: false,
-  },
-  {
-    id: '3',
-    name: 'MR00003',
-    subject: 'Weekly Check',
-    equipmentId: 'eq3',
-    equipment: {
-      id: 'eq3',
-      name: 'Conveyor Belt A',
-      serialNumber: 'CB-A-2024',
-      active: true,
-    },
-    requestType: 'preventive',
-    state: 'new',
-    scheduledDate: '2024-02-20T10:00:00Z',
-    isOverdue: false,
-  },
-];
-
 export default function CalendarPage() {
-  const { loading } = useRequireAuth();
+  const { loading: authLoading } = useRequireAuth();
+  const [loading, setLoading] = useState(true);
+  const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F7F8F9]">
-        <div className="text-[#5F6B76]">Loading...</div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!authLoading) {
+      loadCalendarRequests();
+    }
+  }, [authLoading]);
+
+  const loadCalendarRequests = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - 1);
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 2);
+
+      const calendarRequests = await getCalendarRequests({
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      });
+
+      const mappedRequests: MaintenanceRequest[] = calendarRequests.map((req) => ({
+        id: req.id,
+        name: req.name,
+        subject: req.subject,
+        equipmentId: req.equipment.id,
+        equipment: {
+          id: req.equipment.id,
+          name: req.equipment.name,
+          serialNumber: '',
+          active: true,
+        },
+        technician: req.technician
+          ? {
+              id: req.technician.id,
+              name: req.technician.name,
+            }
+          : undefined,
+        requestType: req.requestType as 'corrective' | 'preventive',
+        state: req.state as MaintenanceRequest['state'],
+        scheduledDate: req.scheduledDate,
+        isOverdue: false,
+      }));
+
+      setRequests(mappedRequests);
+    } catch (err: any) {
+      console.error('Error loading calendar requests:', err);
+      setError(err.message || 'Failed to load calendar requests');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDateClick = (date: Date, requests: MaintenanceRequest[]) => {
     console.log('Date clicked:', date, requests);
   };
 
-  return <CalendarView requests={mockRequests} onDateClick={handleDateClick} />;
+  if (authLoading || loading) {
+    return (
+      <DashboardShell>
+        <div className="min-h-screen flex items-center justify-center bg-[#F7F8F9]">
+          <div className="text-[#5F6B76]">Loading...</div>
+        </div>
+      </DashboardShell>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardShell>
+        <div className="min-h-screen flex items-center justify-center bg-[#F7F8F9]">
+          <div className="text-center">
+            <p className="text-[#A14A4A] mb-4">{error}</p>
+            <button
+              onClick={loadCalendarRequests}
+              className="px-4 py-2 bg-[#5B7C99] text-white rounded-lg hover:opacity-90"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </DashboardShell>
+    );
+  }
+
+  return (
+    <DashboardShell>
+      <CalendarView requests={requests} onDateClick={handleDateClick} />
+    </DashboardShell>
+  );
 }
 

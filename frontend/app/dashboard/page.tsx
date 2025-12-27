@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import DashboardShell from '@/app/components/layout/DashboardShell';
-import { DashboardService } from '@/app/services/dashboard';
+import { DashboardService, type RecentActivity } from '@/app/services/dashboard';
 import { Equipment, MaintenanceRequest } from '@/app/types/maintenance';
 import {
     Wrench,
@@ -13,7 +13,9 @@ import {
     Plus,
     Box,
     Activity,
-    MapPin
+    MapPin,
+    Users,
+    TrendingUp
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,6 +24,8 @@ export default function DashboardPage() {
     const [equipment, setEquipment] = useState<Equipment[]>([]);
     const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
     const [tasks, setTasks] = useState<MaintenanceRequest[]>([]);
+    const [stats, setStats] = useState<any>(null); // Using any for now or import DashboardStats
+    const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
     const [loadingConfig, setLoadingConfig] = useState(true);
 
     useEffect(() => {
@@ -40,10 +44,15 @@ export default function DashboardPage() {
                     setRequests(userReq);
                 } else if (user.role === 'technician') {
                     // Fetch data for technicians
-                    // For now using a hardcoded tech ID 'tech-1' matching the mock data, 
-                    // in real app this would come from user profile linkage
-                    const techTasks = await DashboardService.getTechnicianTasks('tech-1');
+                    const techTasks = await DashboardService.getTechnicianTasks(user.id);
                     setTasks(techTasks);
+                } else if (user.role === 'manager' || user.role === 'admin') {
+                    const [dashboardStats, activity] = await Promise.all([
+                        DashboardService.getDashboardStats(),
+                        DashboardService.getRecentActivity(20)
+                    ]);
+                    setStats(dashboardStats);
+                    setRecentActivity(activity);
                 }
             } catch (error) {
                 console.error("Failed to load dashboard data", error);
@@ -190,22 +199,131 @@ export default function DashboardPage() {
         </div>
     );
 
-    const renderManagerView = () => (
-        <div className="space-y-8">
-            <h1 className="text-2xl font-bold text-[#1C1F23]">Manager Overview</h1>
-            <p>Global KPI view coming soon...</p>
-            <Link href="/maintenance" className="text-[#5B7C99] hover:underline">Go to Maintenance Board</Link>
-        </div>
-    );
+    const renderManagerView = () => {
+        const criticalCount = stats?.criticalEquipmentCount || 0;
+        const technicianUtilization = stats?.technicianUtilization || 0;
+        const openRequestsCount = stats?.openRequests || 0;
+        const overdueCount = stats?.overdueRequests || 0;
+        const pendingCount = openRequestsCount - overdueCount;
+
+        return (
+            <div className="space-y-6">
+
+                {/* Three Information Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Red Card - Critical Equipment */}
+                    <div className="bg-red-500 rounded-2xl p-6 text-white shadow-lg">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold">Critical Equipment</h3>
+                            <AlertCircle size={24} className="text-red-200" />
+                        </div>
+                        <p className="text-3xl font-bold mb-1">{criticalCount} Units</p>
+                        <p className="text-sm text-red-100">Health &lt; 30%</p>
+                        <p className="text-xs text-red-200 mt-2">At-risk machines needing immediate attention</p>
+                    </div>
+
+                    {/* Blue Card - Technician Load */}
+                    <div className="bg-blue-500 rounded-2xl p-6 text-white shadow-lg">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold">Technician Load</h3>
+                            <Users size={24} className="text-blue-200" />
+                        </div>
+                        <p className="text-3xl font-bold mb-1">{technicianUtilization}%</p>
+                        <p className="text-sm text-blue-100">Utilized</p>
+                        <p className="text-xs text-blue-200 mt-2">
+                            Assign {stats?.activeTechnicians || 0} of {stats?.totalTechnicians || 0} technicians
+                        </p>
+                    </div>
+
+                    {/* Green Card - Open Requests */}
+                    <div className="bg-green-500 rounded-2xl p-6 text-white shadow-lg">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold">Open Requests</h3>
+                            <Activity size={24} className="text-green-200" />
+                        </div>
+                        <div className="space-y-2">
+                            <div>
+                                <p className="text-2xl font-bold">{pendingCount} Pending</p>
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold">{overdueCount} Overdue</p>
+                            </div>
+                        </div>
+                        <p className="text-xs text-green-200 mt-2">Display the states where requests are in</p>
+                    </div>
+                </div>
+
+                {/* Activity Table */}
+                <div className="bg-white rounded-2xl border border-[#ECEFF1] shadow-[0_1px_2px_rgba(0,0,0,0.05)] overflow-hidden">
+                    <div className="p-6 border-b border-[#ECEFF1]">
+                        <h2 className="text-xl font-bold text-[#1C1F23]">Subjects</h2>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-[#F7F8F9] border-b border-[#ECEFF1]">
+                                <tr>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-[#90A4AE] uppercase tracking-wider">Subjects</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-[#90A4AE] uppercase tracking-wider">Employee</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-[#90A4AE] uppercase tracking-wider">Tech</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-[#90A4AE] uppercase tracking-wider">Category</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-[#90A4AE] uppercase tracking-wider">Stage</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-[#90A4AE] uppercase tracking-wider">Company</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#ECEFF1]">
+                                {recentActivity.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-[#5F6B76]">
+                                            No recent activity
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    recentActivity.map((activity) => (
+                                        <tr key={activity.id} className="hover:bg-[#F7F8F9] transition-colors cursor-pointer">
+                                            <td className="px-6 py-4">
+                                                <Link 
+                                                    href={`/maintenance/${activity.id}`}
+                                                    className="text-sm font-medium text-[#1C1F23] hover:text-[#5B7C99] transition-colors"
+                                                >
+                                                    {activity.subject}
+                                                </Link>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-[#5F6B76]">
+                                                {activity.employee?.name || 'N/A'}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-[#5F6B76]">
+                                                {activity.technician?.name || 'Unassigned'}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-[#5F6B76]">
+                                                {activity.category?.name || 'Uncategorized'}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                                                    activity.state === 'new' ? 'bg-blue-100 text-blue-700' :
+                                                    activity.state === 'in_progress' ? 'bg-orange-100 text-orange-700' :
+                                                    activity.state === 'repaired' ? 'bg-green-100 text-green-700' :
+                                                    'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                    {activity.stage.name}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-[#5F6B76]">
+                                                {activity.company}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <DashboardShell>
             <div className="min-h-screen bg-[#F7F8F9] p-8">
-                <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-[#1C1F23]">Welcome back, {user?.name?.split(' ')[0]}!</h1>
-                    <p className="text-[#5F6B76] mt-1">Here's what's happening with your <span className="lowercase">{user?.role || 'account'}</span> today.</p>
-                </header>
-
                 {user?.role === 'technician' && renderTechnicianView()}
                 {user?.role === 'user' && renderEmployeeView()}
                 {(user?.role === 'manager' || user?.role === 'admin') && renderManagerView()}

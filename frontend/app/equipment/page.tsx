@@ -1,62 +1,56 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRequireAuth } from '@/app/hooks/useRequireAuth';
 import Link from 'next/link';
 import DashboardShell from '@/app/components/layout/DashboardShell';
 import { Search, Plus, Filter, LayoutGrid, List, ChevronRight } from 'lucide-react';
-
-// Mock data for Equipment
-const mockEquipment = [
-    {
-        id: 'eq1',
-        name: 'CNC Machine 01',
-        serialNumber: 'CNC-001-2024',
-        department: 'Production',
-        assignedTo: 'John Doe',
-        location: 'Building A, Floor 2',
-        status: 'active',
-        lastMaintenance: '2024-02-15',
-    },
-    {
-        id: 'eq2',
-        name: 'Drill Press 05',
-        serialNumber: 'DP-005-2024',
-        department: 'Production',
-        assignedTo: 'Jane Smith',
-        location: 'Building A, Floor 1',
-        status: 'active',
-        lastMaintenance: '2024-02-10',
-    },
-    {
-        id: 'eq3',
-        name: 'Laptop Dell XPS 15',
-        serialNumber: 'DLX-2024-001',
-        department: 'IT',
-        assignedTo: 'Michael Chen',
-        location: 'IT Office, Floor 3',
-        status: 'active',
-        lastMaintenance: '2024-01-20',
-    },
-    {
-        id: 'eq4',
-        name: 'Conveyor Belt A',
-        serialNumber: 'CB-A-2024',
-        department: 'Logistics',
-        assignedTo: 'Robert Wilson',
-        location: 'Warehouse, Floor 1',
-        status: 'inactive',
-        lastMaintenance: '2024-02-05',
-    },
-];
+import { getEquipment, type Equipment } from '@/app/services/equipment';
 
 export default function EquipmentPage() {
-    const { loading } = useRequireAuth();
+    const { loading: authLoading } = useRequireAuth();
+    const [loading, setLoading] = useState(true);
+    const [equipment, setEquipment] = useState<Equipment[]>([]);
+    const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [groupBy, setGroupBy] = useState<'none' | 'department' | 'employee'>('none');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-    if (loading) {
+    useEffect(() => {
+        if (!authLoading) {
+            loadEquipment();
+        }
+    }, [authLoading]);
+
+    useEffect(() => {
+        if (!authLoading) {
+            const timeoutId = setTimeout(() => {
+                loadEquipment();
+            }, 500);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [searchTerm]);
+
+    const loadEquipment = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await getEquipment({
+                limit: 100,
+                active: true,
+                search: searchTerm || undefined,
+            });
+            setEquipment(response.equipment);
+        } catch (err: any) {
+            const errorMessage = err?.message || err?.error || (typeof err === 'string' ? err : 'Failed to load equipment');
+            console.error('Error loading equipment:', errorMessage, err);
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (authLoading || loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#F7F8F9]">
                 <div className="text-[#5F6B76]">Loading...</div>
@@ -64,19 +58,37 @@ export default function EquipmentPage() {
         );
     }
 
-    const filteredEquipment = mockEquipment.filter(item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.serialNumber.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
     const groupedEquipment = groupBy === 'none'
-        ? { 'All Equipment': filteredEquipment }
-        : filteredEquipment.reduce((acc, item) => {
-            const key = groupBy === 'department' ? item.department : item.assignedTo;
+        ? { 'All Equipment': equipment }
+        : equipment.reduce((acc, item) => {
+            let key = 'Unassigned';
+            if (groupBy === 'department') {
+                key = item.department?.name || 'No Department';
+            } else if (groupBy === 'employee') {
+                key = item.employee?.name || 'No Employee';
+            }
             if (!acc[key]) acc[key] = [];
             acc[key].push(item);
             return acc;
-        }, {} as Record<string, typeof mockEquipment>);
+        }, {} as Record<string, Equipment[]>);
+
+    if (error) {
+        return (
+            <DashboardShell>
+                <div className="min-h-screen flex items-center justify-center bg-[#F7F8F9]">
+                    <div className="text-center">
+                        <p className="text-[#A14A4A] mb-4">{error}</p>
+                        <button
+                            onClick={loadEquipment}
+                            className="px-4 py-2 bg-[#5B7C99] text-white rounded-lg hover:opacity-90"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                </div>
+            </DashboardShell>
+        );
+    }
 
     return (
         <DashboardShell>
@@ -168,27 +180,39 @@ export default function EquipmentPage() {
                                                     <h3 className="font-semibold text-[#1C1F23] group-hover:text-[#5B7C99] transition-colors">
                                                         {item.name}
                                                     </h3>
-                                                    <p className="text-xs text-[#90A4AE] mt-0.5">{item.serialNumber}</p>
+                                                    <p className="text-xs text-[#90A4AE] mt-0.5">{item.serialNumber || 'No Serial Number'}</p>
                                                 </div>
-                                                <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${item.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                                                <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${item.active ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                                                     }`}>
-                                                    {item.status}
+                                                    {item.active ? 'active' : 'inactive'}
                                                 </span>
                                             </div>
 
                                             <div className="space-y-3 mt-auto">
-                                                <div className="flex items-center gap-2 text-sm text-[#5F6B76]">
-                                                    <span className="w-20 text-xs text-[#90A4AE] uppercase tracking-tight">Location</span>
-                                                    <span className="truncate">{item.location}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm text-[#5F6B76]">
-                                                    <span className="w-20 text-xs text-[#90A4AE] uppercase tracking-tight">Department</span>
-                                                    <span className="truncate">{item.department}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm text-[#5F6B76]">
-                                                    <span className="w-20 text-xs text-[#90A4AE] uppercase tracking-tight">Maintained</span>
-                                                    <span>{new Date(item.lastMaintenance).toLocaleDateString()}</span>
-                                                </div>
+                                                {item.location && (
+                                                    <div className="flex items-center gap-2 text-sm text-[#5F6B76]">
+                                                        <span className="w-20 text-xs text-[#90A4AE] uppercase tracking-tight">Location</span>
+                                                        <span className="truncate">{item.location}</span>
+                                                    </div>
+                                                )}
+                                                {item.department && (
+                                                    <div className="flex items-center gap-2 text-sm text-[#5F6B76]">
+                                                        <span className="w-20 text-xs text-[#90A4AE] uppercase tracking-tight">Department</span>
+                                                        <span className="truncate">{item.department.name}</span>
+                                                    </div>
+                                                )}
+                                                {item.employee && (
+                                                    <div className="flex items-center gap-2 text-sm text-[#5F6B76]">
+                                                        <span className="w-20 text-xs text-[#90A4AE] uppercase tracking-tight">Employee</span>
+                                                        <span className="truncate">{item.employee.name}</span>
+                                                    </div>
+                                                )}
+                                                {item.requestCount !== undefined && (
+                                                    <div className="flex items-center gap-2 text-sm text-[#5F6B76]">
+                                                        <span className="w-20 text-xs text-[#90A4AE] uppercase tracking-tight">Requests</span>
+                                                        <span>{item.requestCount}</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </Link>
                                     ))}
@@ -210,14 +234,14 @@ export default function EquipmentPage() {
                                                 <tr key={item.id} className="border-t border-[#ECEFF1] hover:bg-[#F7F8F9]/50 transition-colors">
                                                     <td className="px-6 py-4">
                                                         <div className="font-medium text-[#1C1F23]">{item.name}</div>
-                                                        <div className="text-xs text-[#90A4AE] lg:hidden">{item.serialNumber}</div>
+                                                        <div className="text-xs text-[#90A4AE] lg:hidden">{item.serialNumber || 'No Serial Number'}</div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm text-[#5F6B76]">{item.serialNumber}</td>
-                                                    <td className="px-6 py-4 text-sm text-[#5F6B76]">{item.department}</td>
+                                                    <td className="px-6 py-4 text-sm text-[#5F6B76]">{item.serialNumber || '-'}</td>
+                                                    <td className="px-6 py-4 text-sm text-[#5F6B76]">{item.department?.name || '-'}</td>
                                                     <td className="px-6 py-4">
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${item.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${item.active ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                                                             }`}>
-                                                            {item.status}
+                                                            {item.active ? 'active' : 'inactive'}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
@@ -234,7 +258,7 @@ export default function EquipmentPage() {
                         </div>
                     ))}
 
-                    {filteredEquipment.length === 0 && (
+                    {Object.values(groupedEquipment).every(group => group.length === 0) && (
                         <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-[#CFD8DC]">
                             <Search size={48} className="text-[#CFD8DC] mb-4" />
                             <h3 className="text-lg font-medium text-[#5F6B76]">No equipment found</h3>

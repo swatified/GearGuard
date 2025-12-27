@@ -7,6 +7,16 @@ const equipmentCategorySchema = new mongoose.Schema({
         unique: true,
         trim: true
     },
+    responsible: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    description: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     active: {
         type: Boolean,
         default: true
