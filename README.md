@@ -237,13 +237,15 @@ For complete API documentation, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.m
 
 ### 👥 Team Members
 
-_Swati Sharma_: [@swatified](https://github.com/swatified)
+_Ansh Bhatt_: [@ansh-logics](https://github.com/ansh-logics)
 
 _Sourav Upreti_: [@souravupreti](https://github.com/souravupreti)
 
+_Swati Sharma_: [@swatified](https://github.com/swatified)
+
 _Varun Bahuguna_: [@varun858-tech](https://github.com/varun858-tech)
 
-_Ansh Bhatt_: [@ansh-logics](https://github.com/ansh-logics)
+
 
 &nbsp;
 
