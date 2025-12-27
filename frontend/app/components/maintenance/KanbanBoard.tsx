@@ -22,10 +22,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import KanbanCard from './KanbanCard';
 import { MoreHorizontal, Plus, AlertCircle, CheckCircle2, Wrench, Trash2 } from 'lucide-react';
-import type {
-  MaintenanceRequest,
-  MaintenanceRequestState,
-} from '@/app/types/maintenance';
+import type { MaintenanceRequest } from '@/app/services/maintenanceRequests';
+import type { MaintenanceRequestState } from '@/app/types/maintenance';
 
 interface KanbanBoardProps {
   requests: MaintenanceRequest[];

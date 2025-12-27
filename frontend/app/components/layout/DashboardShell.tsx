@@ -34,7 +34,6 @@ const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Maintenance Calendar', href: '/maintenance/calendar', icon: Calendar },
     { name: 'Equipment', href: '/equipment', icon: Box },
-    { name: 'Work Centers', href: '/work-centers', icon: Settings },
     { name: 'Reporting', href: '/reporting', icon: TrendingUp },
     { name: 'Teams', href: '/teams', icon: Users },
 ];
@@ -44,6 +43,7 @@ export default function DashboardShell({ children }: DashboardShellProps) {
     const router = useRouter();
     const { logout, user } = useAuth();
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [isEquipmentMenuOpen, setIsEquipmentMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
     const handleLogout = async () => {
@@ -78,6 +78,61 @@ export default function DashboardShell({ children }: DashboardShellProps) {
                             {navItems.map((item) => {
                                 const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
                                 const Icon = item.icon;
+
+                                // Special handling for Equipment dropdown
+                                if (item.name === 'Equipment') {
+                                    const isEquipmentActive = pathname.startsWith('/equipment') || pathname.startsWith('/work-centers');
+                                    return (
+                                        <div key={item.href} className="relative">
+                                            <button
+                                                onClick={() => setIsEquipmentMenuOpen(!isEquipmentMenuOpen)}
+                                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
+                                                    isEquipmentActive
+                                                        ? 'bg-[#5B7C99] text-white'
+                                                        : 'text-[#5F6B76] hover:bg-[#F7F8F9] hover:text-[#1C1F23]'
+                                                }`}
+                                            >
+                                                <Icon size={16} />
+                                                {item.name}
+                                                <ChevronDown size={14} className={isEquipmentMenuOpen ? 'rotate-180' : ''} />
+                                            </button>
+                                            {isEquipmentMenuOpen && (
+                                                <>
+                                                    <div
+                                                        className="fixed inset-0 z-40"
+                                                        onClick={() => setIsEquipmentMenuOpen(false)}
+                                                    />
+                                                    <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-[#ECEFF1] z-50 py-2">
+                                                        <Link
+                                                            href="/equipment"
+                                                            onClick={() => setIsEquipmentMenuOpen(false)}
+                                                            className={`flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                                                                pathname.startsWith('/equipment') && !pathname.startsWith('/work-centers')
+                                                                    ? 'bg-[#5B7C99]/10 text-[#5B7C99]'
+                                                                    : 'text-[#5F6B76] hover:bg-[#F7F8F9]'
+                                                            }`}
+                                                        >
+                                                            <Wrench size={16} />
+                                                            Tools
+                                                        </Link>
+                                                        <Link
+                                                            href="/work-centers"
+                                                            onClick={() => setIsEquipmentMenuOpen(false)}
+                                                            className={`flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                                                                pathname.startsWith('/work-centers')
+                                                                    ? 'bg-[#5B7C99]/10 text-[#5B7C99]'
+                                                                    : 'text-[#5F6B76] hover:bg-[#F7F8F9]'
+                                                            }`}
+                                                        >
+                                                            <Settings size={16} />
+                                                            Work Centers
+                                                        </Link>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                }
 
                                 return (
                                     <Link

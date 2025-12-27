@@ -19,6 +19,11 @@ export interface MaintenanceRequest {
     name: string;
     members?: Array<{ id: string; name: string }>;
   };
+  categoryId?: string;
+  category?: {
+    id: string;
+    name: string;
+  };
   technicianId?: string;
   technician?: {
     id: string;

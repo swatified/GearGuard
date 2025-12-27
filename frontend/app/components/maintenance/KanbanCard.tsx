@@ -1,7 +1,7 @@
 'use client';
 
 import { format } from 'date-fns';
-import type { MaintenanceRequest } from '@/app/types/maintenance';
+import type { MaintenanceRequest } from '@/app/services/maintenanceRequests';
 import { Calendar, User as UserIcon, AlertCircle, Clock } from 'lucide-react';
 
 interface KanbanCardProps {

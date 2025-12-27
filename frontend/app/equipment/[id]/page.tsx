@@ -149,6 +149,7 @@ export default function EquipmentDetailPage({ params }: PageProps) {
           name: equipment.workCenter.name,
         }
       : undefined,
+    equipmentType: equipment.equipmentType || 'workCenter',
     active: equipment.active,
     requestCount: equipment.requestCount || 0,
     openRequestCount: equipment.openRequestCount || 0,

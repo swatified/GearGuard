@@ -32,6 +32,7 @@ import {
   Save,
   Edit
 } from 'lucide-react';
+import ActivityLog from '@/app/components/maintenance/ActivityLog';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -46,7 +47,7 @@ export default function MaintenanceRequestDetailPage({ params }: PageProps) {
   const [request, setRequest] = useState<MaintenanceRequest | null>(null);
   const [stages, setStages] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'notes' | 'instructions'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'instructions' | 'activity'>('notes');
   const [isEditing, setIsEditing] = useState(false);
   const [showWorksheet, setShowWorksheet] = useState(false);
   const [formData, setFormData] = useState<any>({});
@@ -109,18 +110,37 @@ export default function MaintenanceRequestDetailPage({ params }: PageProps) {
   const handleSave = async () => {
     try {
       setError(null);
-      await updateMaintenanceRequest(id, {
-        subject: formData.subject,
-        description: formData.description,
-        scheduledDate: formData.scheduledDate,
-        duration: formData.duration,
-        note: formData.note
-      });
+      
+      // Prepare update data - only include fields that have values
+      const updateData: any = {};
+      
+      // Subject is required, so always include it
+      if (formData.subject) {
+        updateData.subject = formData.subject;
+      }
+      if (formData.description !== undefined) {
+        updateData.description = formData.description || undefined;
+      }
+      if (formData.scheduledDate) {
+        updateData.scheduledDate = formData.scheduledDate;
+      } else if (formData.scheduledDate === '') {
+        // Allow clearing scheduled date
+        updateData.scheduledDate = null;
+      }
+      if (formData.duration !== undefined && formData.duration !== null) {
+        updateData.duration = Number(formData.duration) || 0;
+      }
+      if (formData.note !== undefined) {
+        updateData.note = formData.note || undefined;
+      }
+      
+      await updateMaintenanceRequest(id, updateData);
       setIsEditing(false);
       await loadRequestData();
     } catch (err: any) {
       console.error('Error updating request:', err);
-      setError(err?.message || 'Failed to update request');
+      const errorMessage = err?.message || err?.error?.message || 'Failed to update request';
+      setError(errorMessage);
     }
   };
 
@@ -403,7 +423,16 @@ export default function MaintenanceRequestDetailPage({ params }: PageProps) {
                   </label>
                   <div className="flex items-center gap-2">
                     <Users size={16} className="text-[#90A4AE]" />
-                    <p className="text-[#1C1F23] font-medium">{request.maintenanceTeam?.name || 'Not assigned'}</p>
+                    {request.maintenanceTeamId && request.maintenanceTeam ? (
+                      <Link
+                        href={`/teams/${request.maintenanceTeamId}`}
+                        className="text-[#5B7C99] hover:text-[#4A6B88] font-medium hover:underline transition-colors"
+                      >
+                        {request.maintenanceTeam.name}
+                      </Link>
+                    ) : (
+                      <p className="text-[#1C1F23] font-medium">Not assigned</p>
+                    )}
                   </div>
                 </div>
 
@@ -536,7 +565,7 @@ export default function MaintenanceRequestDetailPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Tabs: Notes and Instructions */}
+            {/* Tabs: Notes, Instructions, and Activity Log */}
             <div className="border-t border-[#ECEFF1]">
               <div className="flex border-b border-[#ECEFF1]">
                 <button
@@ -559,6 +588,16 @@ export default function MaintenanceRequestDetailPage({ params }: PageProps) {
                 >
                   Instructions
                 </button>
+                <button
+                  onClick={() => setActiveTab('activity')}
+                  className={`px-6 py-4 text-sm font-semibold border-b-2 transition-colors ${
+                    activeTab === 'activity'
+                      ? 'border-[#5B7C99] text-[#5B7C99]'
+                      : 'border-transparent text-[#90A4AE] hover:text-[#5F6B76]'
+                  }`}
+                >
+                  Activity Log
+                </button>
               </div>
 
               <div className="p-6">
@@ -578,12 +617,14 @@ export default function MaintenanceRequestDetailPage({ params }: PageProps) {
                       </p>
                     )}
                   </div>
-                ) : (
+                ) : activeTab === 'instructions' ? (
                   <div>
                     <p className="text-[#1C1F23] whitespace-pre-wrap">
                       {request.description || 'No instructions provided.'}
                     </p>
                   </div>
+                ) : (
+                  <ActivityLog requestId={id} />
                 )}
               </div>
             </div>

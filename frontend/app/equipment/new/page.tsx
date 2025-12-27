@@ -10,6 +10,7 @@ import { createEquipment } from '@/app/services/equipment';
 import { getDepartments } from '@/app/services/departments';
 import { getEquipmentCategories } from '@/app/services/equipmentCategories';
 import { getMaintenanceTeams } from '@/app/services/maintenanceTeams';
+import { getWorkCenters } from '@/app/services/workCenters';
 
 export default function NewEquipmentPage() {
     const { loading } = useRequireAuth();
@@ -31,11 +32,14 @@ export default function NewEquipmentPage() {
         maintenanceTeamId: '',
         technicianId: '',
         workCenterId: '',
+        equipmentType: 'workCenter',
         note: '',
     });
     const [departments, setDepartments] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [teams, setTeams] = useState<any[]>([]);
+    const [workCenters, setWorkCenters] = useState<any[]>([]);
+    const [equipmentType, setEquipmentType] = useState<'workCenter' | 'machineTools'>('workCenter');
     const [loadingData, setLoadingData] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -49,14 +53,16 @@ export default function NewEquipmentPage() {
     const loadFormData = async () => {
         try {
             setLoadingData(true);
-            const [deptsData, catsData, teamsData] = await Promise.all([
+            const [deptsData, catsData, teamsData, workCentersData] = await Promise.all([
                 getDepartments().catch(() => []),
                 getEquipmentCategories().catch(() => []),
-                getMaintenanceTeams({ active: true }).catch(() => ({ teams: [] }))
+                getMaintenanceTeams({ active: true }).catch(() => ({ teams: [] })),
+                getWorkCenters({ limit: 1000, active: true }).catch(() => ({ data: { workCenters: [] } }))
             ]);
             setDepartments(deptsData);
             setCategories(catsData);
             setTeams(teamsData.teams || []);
+            setWorkCenters(workCentersData.data?.workCenters || []);
         } catch (err: any) {
             console.error('Error loading form data:', err);
         } finally {
@@ -96,7 +102,10 @@ export default function NewEquipmentPage() {
             if (formData.categoryId) submitData.categoryId = formData.categoryId;
             if (formData.employeeId) submitData.employeeId = formData.employeeId;
             if (formData.technicianId) submitData.technicianId = formData.technicianId;
-            if (formData.workCenterId) submitData.workCenterId = formData.workCenterId;
+            if (equipmentType === 'workCenter' && formData.workCenterId) {
+                submitData.workCenterId = formData.workCenterId;
+            }
+            submitData.equipmentType = equipmentType;
             if (formData.note) submitData.note = formData.note;
 
             await createEquipment(submitData);
@@ -332,6 +341,96 @@ export default function NewEquipmentPage() {
                                     </div>
                                 </div>
 
+                                {/* Equipment Type Selection - Two Options */}
+                                <div className="md:col-span-2 border-t border-[#ECEFF1] pt-6 mt-2 space-y-4">
+                                    <h2 className="text-sm font-semibold text-[#90A4AE] uppercase tracking-wider mb-4">Equipment Type *</h2>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setEquipmentType('workCenter');
+                                            }}
+                                            className={`p-6 border-2 rounded-lg transition-all text-left ${
+                                                equipmentType === 'workCenter'
+                                                    ? 'border-[#5B7C99] bg-[#5B7C99]/5 shadow-sm'
+                                                    : 'border-[#ECEFF1] hover:border-[#5B7C99]/30 bg-white'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                                    equipmentType === 'workCenter'
+                                                        ? 'border-[#5B7C99] bg-[#5B7C99]'
+                                                        : 'border-[#ECEFF1]'
+                                                }`}>
+                                                    {equipmentType === 'workCenter' && (
+                                                        <div className="w-2 h-2 rounded-full bg-white" />
+                                                    )}
+                                                </div>
+                                                <Building2 size={20} className={equipmentType === 'workCenter' ? 'text-[#5B7C99]' : 'text-[#90A4AE]'} />
+                                                <span className={`font-semibold ${equipmentType === 'workCenter' ? 'text-[#5B7C99]' : 'text-[#1C1F23]'}`}>
+                                                    Work Center
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-[#5F6B76] ml-8">
+                                                Equipment associated with a work center
+                                            </p>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setEquipmentType('machineTools');
+                                                setFormData({ ...formData, workCenterId: '' });
+                                            }}
+                                            className={`p-6 border-2 rounded-lg transition-all text-left ${
+                                                equipmentType === 'machineTools'
+                                                    ? 'border-[#5B7C99] bg-[#5B7C99]/5 shadow-sm'
+                                                    : 'border-[#ECEFF1] hover:border-[#5B7C99]/30 bg-white'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                                    equipmentType === 'machineTools'
+                                                        ? 'border-[#5B7C99] bg-[#5B7C99]'
+                                                        : 'border-[#ECEFF1]'
+                                                }`}>
+                                                    {equipmentType === 'machineTools' && (
+                                                        <div className="w-2 h-2 rounded-full bg-white" />
+                                                    )}
+                                                </div>
+                                                <Settings size={20} className={equipmentType === 'machineTools' ? 'text-[#5B7C99]' : 'text-[#90A4AE]'} />
+                                                <span className={`font-semibold ${equipmentType === 'machineTools' ? 'text-[#5B7C99]' : 'text-[#1C1F23]'}`}>
+                                                    Machine & Tools
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-[#5F6B76] ml-8">
+                                                Standalone machines and tools
+                                            </p>
+                                        </button>
+                                    </div>
+                                    {equipmentType === 'workCenter' && (
+                                        <div className="mt-4 space-y-1.5">
+                                            <label className="text-sm font-medium text-[#1C1F23] flex items-center gap-2">
+                                                <Building2 size={14} className="text-[#5B7C99]" />
+                                                Select Work Center *
+                                            </label>
+                                            <select
+                                                required={equipmentType === 'workCenter'}
+                                                name="workCenterId"
+                                                className="w-full px-4 py-2 bg-[#F7F8F9] border border-[#ECEFF1] rounded-lg text-sm focus:outline-none focus:border-[#5B7C99] transition-colors appearance-none"
+                                                value={formData.workCenterId}
+                                                onChange={handleChange}
+                                            >
+                                                <option value="">Select Work Center</option>
+                                                {workCenters.map((wc) => (
+                                                    <option key={wc.id} value={wc.id}>
+                                                        {wc.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Responsibility */}
                                 <div className="md:col-span-2 border-t border-[#ECEFF1] pt-6 mt-2 space-y-4">
                                     <h2 className="text-sm font-semibold text-[#90A4AE] uppercase tracking-wider mb-2">Responsibility</h2>
@@ -368,27 +467,15 @@ export default function NewEquipmentPage() {
                                                 onChange={handleChange}
                                             >
                                                 <option value="">Select Technician</option>
-                                                {(teams
-                                                    .find(t => t.id === formData.maintenanceTeamId)
-                                                    ?.members || []).map((member: any) => (
+                                                {(() => {
+                                                    const selectedTeam = teams.find(t => t.id === formData.maintenanceTeamId);
+                                                    const members = (selectedTeam?.members || []).filter((m: any) => m && m.id);
+                                                    return members.map((member: any) => (
                                                         <option key={member.id} value={member.id}>
                                                             {member.name}
                                                         </option>
-                                                    ))}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-sm font-medium text-[#1C1F23] flex items-center gap-2">
-                                                <Building2 size={14} className="text-[#5B7C99]" />
-                                                Work Center
-                                            </label>
-                                            <select
-                                                name="workCenterId"
-                                                className="w-full px-4 py-2 bg-[#F7F8F9] border border-[#ECEFF1] rounded-lg text-sm focus:outline-none focus:border-[#5B7C99] transition-colors appearance-none"
-                                                value={formData.workCenterId}
-                                                onChange={handleChange}
-                                            >
-                                                <option value="">Select Work Center (Coming Soon)</option>
+                                                    ));
+                                                })()}
                                             </select>
                                         </div>
                                     </div>

@@ -14,7 +14,8 @@ import {
 } from '@/app/services/maintenanceRequests';
 import { getMaintenanceStages } from '@/app/services/maintenanceStages';
 import type { MaintenanceRequestState } from '@/app/types/maintenance';
-import { Plus } from 'lucide-react';
+import { Plus, LayoutGrid, List } from 'lucide-react';
+import MaintenanceRequestsTable from '@/app/components/maintenance/MaintenanceRequestsTable';
 
 export default function MaintenancePage() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function MaintenancePage() {
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
 
   useEffect(() => {
     if (!authLoading) {
@@ -145,13 +147,36 @@ export default function MaintenancePage() {
                 <h1 className="text-2xl font-semibold text-[#1C1F23]">Maintenance Tracking</h1>
                 <p className="text-[#5F6B76] text-sm mt-1">Manage and track maintenance requests</p>
               </div>
-              <Link
-                href="/maintenance/new"
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-[#5B7C99] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 text-sm font-medium"
-              >
-                <Plus size={18} />
-                New Request
-              </Link>
+              <div className="flex items-center gap-4">
+                {/* View Toggle */}
+                <div className="flex items-center bg-[#F7F8F9] p-1 rounded-lg border border-[#ECEFF1]">
+                  <button
+                    onClick={() => setViewMode('kanban')}
+                    className={`p-1.5 rounded-md transition-all ${
+                      viewMode === 'kanban' ? 'bg-white text-[#5B7C99] shadow-sm' : 'text-[#90A4AE] hover:text-[#5F6B76]'
+                    }`}
+                    title="Kanban View"
+                  >
+                    <LayoutGrid size={18} />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('table')}
+                    className={`p-1.5 rounded-md transition-all ${
+                      viewMode === 'table' ? 'bg-white text-[#5B7C99] shadow-sm' : 'text-[#90A4AE] hover:text-[#5F6B76]'
+                    }`}
+                    title="Table View"
+                  >
+                    <List size={18} />
+                  </button>
+                </div>
+                <Link
+                  href="/maintenance/new"
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-[#5B7C99] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 text-sm font-medium"
+                >
+                  <Plus size={18} />
+                  New Request
+                </Link>
+              </div>
             </div>
 
             {error && (
@@ -162,16 +187,23 @@ export default function MaintenancePage() {
           </div>
         </div>
 
-        {/* Kanban Board */}
+        {/* Content Area */}
         <div className="flex-1 overflow-hidden px-6 pb-6 min-h-0">
           <div className="h-full max-w-full">
-            <KanbanBoard
-              requests={requests}
-              onStateChange={handleStateChange}
-              onCardClick={handleCardClick}
-              userRole={user?.role}
-              currentUserId={user?.id}
-            />
+            {viewMode === 'kanban' ? (
+              <KanbanBoard
+                requests={requests}
+                onStateChange={handleStateChange}
+                onCardClick={handleCardClick}
+                userRole={user?.role}
+                currentUserId={user?.id}
+              />
+            ) : (
+              <MaintenanceRequestsTable
+                requests={requests}
+                onRequestClick={handleCardClick}
+              />
+            )}
           </div>
         </div>
       </div>

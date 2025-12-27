@@ -43,6 +43,7 @@ export interface Equipment {
     id: string;
     name: string;
   };
+  equipmentType?: 'workCenter' | 'machineTools';
   active: boolean;
   requestCount?: number;
   openRequestCount?: number;
@@ -55,6 +56,7 @@ export interface EquipmentFilters {
   limit?: number;
   active?: boolean;
   departmentId?: string;
+  categoryId?: string;
   employeeId?: string;
   teamId?: string;
   search?: string;
@@ -77,6 +79,7 @@ export async function getEquipment(filters?: EquipmentFilters): Promise<Equipmen
     if (filters?.limit) params.append('limit', filters.limit.toString());
     if (filters?.active !== undefined) params.append('active', filters.active.toString());
     if (filters?.departmentId) params.append('departmentId', filters.departmentId);
+    if (filters?.categoryId) params.append('categoryId', filters.categoryId);
     if (filters?.employeeId) params.append('employeeId', filters.employeeId);
     if (filters?.teamId) params.append('teamId', filters.teamId);
     if (filters?.search) params.append('search', filters.search);

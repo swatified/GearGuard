@@ -174,14 +174,36 @@ export default function EquipmentDetail({
                         <Users size={12} />
                         Department
                       </dt>
-                      <dd className="text-[#1C1F23] font-medium">{equipment.department?.name || 'Unassigned'}</dd>
+                      <dd className="text-[#1C1F23] font-medium">
+                        {equipment.department?.id ? (
+                          <Link
+                            href={`/departments/${equipment.department.id}`}
+                            className="text-[#5B7C99] hover:text-[#4A6B88] hover:underline transition-colors"
+                          >
+                            {equipment.department.name}
+                          </Link>
+                        ) : (
+                          'Unassigned'
+                        )}
+                      </dd>
                     </div>
                     <div className="space-y-1.5">
                       <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
                         <Tag size={12} />
                         Category
                       </dt>
-                      <dd className="text-[#1C1F23] font-medium">{equipment.category?.name || 'Uncategorized'}</dd>
+                      <dd className="text-[#1C1F23] font-medium">
+                        {equipment.category?.id ? (
+                          <Link
+                            href={`/categories/${equipment.category.id}`}
+                            className="text-[#5B7C99] hover:text-[#4A6B88] hover:underline transition-colors"
+                          >
+                            {equipment.category.name}
+                          </Link>
+                        ) : (
+                          'Uncategorized'
+                        )}
+                      </dd>
                     </div>
                     <div className="space-y-1.5">
                       <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
@@ -231,21 +253,54 @@ export default function EquipmentDetail({
                         <Users size={12} />
                         Maintenance Team
                       </dt>
-                      <dd className="text-[#1C1F23] font-medium">{equipment.maintenanceTeam?.name || 'Not assigned'}</dd>
+                      <dd className="text-[#1C1F23] font-medium">
+                        {equipment.maintenanceTeamId && equipment.maintenanceTeam ? (
+                          <Link
+                            href={`/teams/${equipment.maintenanceTeamId}`}
+                            className="text-[#5B7C99] hover:text-[#4A6B88] hover:underline transition-colors"
+                          >
+                            {equipment.maintenanceTeam.name}
+                          </Link>
+                        ) : (
+                          'Not assigned'
+                        )}
+                      </dd>
                     </div>
                     <div className="space-y-1.5">
                       <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
                         <User size={12} />
                         Assigned Employee
                       </dt>
-                      <dd className="text-[#1C1F23] font-medium">{equipment.employee?.name || 'Not assigned'}</dd>
+                      <dd className="text-[#1C1F23] font-medium">
+                        {equipment.employee?.id ? (
+                          <Link
+                            href={`/employees/${equipment.employee.id}`}
+                            className="text-[#5B7C99] hover:text-[#4A6B88] hover:underline transition-colors"
+                          >
+                            {equipment.employee.name}
+                          </Link>
+                        ) : (
+                          'Not assigned'
+                        )}
+                      </dd>
                     </div>
                     <div className="space-y-1.5">
                       <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
                         <Wrench size={12} />
                         Default Technician
                       </dt>
-                      <dd className="text-[#1C1F23] font-medium font-semibold">{equipment.technician?.name || 'Not assigned'}</dd>
+                      <dd className="text-[#1C1F23] font-medium font-semibold">
+                        {equipment.technician?.id ? (
+                          <Link
+                            href={`/users/${equipment.technician.id}`}
+                            className="text-[#5B7C99] hover:text-[#4A6B88] hover:underline transition-colors"
+                          >
+                            {equipment.technician.name}
+                          </Link>
+                        ) : (
+                          'Not assigned'
+                        )}
+                      </dd>
                     </div>
                     {(equipment as any).workCenter && (
                       <div className="space-y-1.5">
@@ -253,7 +308,18 @@ export default function EquipmentDetail({
                           <Tag size={12} />
                           Work Center
                         </dt>
-                        <dd className="text-[#1C1F23] font-medium">{(equipment as any).workCenter?.name || 'Not assigned'}</dd>
+                        <dd className="text-[#1C1F23] font-medium">
+                          {(equipment as any).workCenter?.id ? (
+                            <Link
+                              href={`/work-centers/${(equipment as any).workCenter.id}`}
+                              className="text-[#5B7C99] hover:text-[#4A6B88] hover:underline transition-colors"
+                            >
+                              {(equipment as any).workCenter.name}
+                            </Link>
+                          ) : (
+                            'Not assigned'
+                          )}
+                        </dd>
                       </div>
                     )}
                   </div>
