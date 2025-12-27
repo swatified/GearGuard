@@ -150,7 +150,7 @@ For complete API documentation, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.m
 - **Postman** - API testing
 - **VS Code** - IDE
 
----
+&nbsp;&nbsp;
 
 ## 🚀 Getting Started
 
@@ -224,34 +224,18 @@ For complete API documentation, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.m
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:5000/api
 
----
+&nbsp;&nbsp;
 
-## 📚 Documentation
+### 📚 Documentation
 
 - **[API Documentation](./API_DOCUMENTATION.md)** - Complete API endpoint reference
 - **[Database Structure](./gear_guard_database.dbml)** - Database schema and relationships
 - **[Folder Structure](./MERN_Folder_Structure.md)** - Detailed project structure
 - **[Requirements Compliance](./REQUIREMENTS_COMPLIANCE_CHECK.md)** - Project requirements analysis
 
----
-
-## 🧪 Testing
-
-### Backend Testing
-```bash
-cd backend
-npm test
-```
-
-### Frontend Testing
-```bash
-cd frontend
-npm test
-```
-
 &nbsp;&nbsp;
 
-## 👥 Team Members
+### 👥 Team Members
 
 _Swati Sharma_: [@swatified](https://github.com/swatified)
 
@@ -263,13 +247,13 @@ _Ansh Bhatt_: [@ansh-logics](https://github.com/ansh-logics)
 
 &nbsp;
 
-## 📄 License
+### 📄 License
 
 This project is part of online round for Odoo x Adani University Hackathon '26. All rights reserved.
 
 &nbsp;
 
-## 🙏 Acknowledgments
+### 🙏 Acknowledgments
 
 - Odoo team for the project requirements
 - Team members for collaboration and contributions
