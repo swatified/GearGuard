@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRequireAuth } from '@/app/hooks/useRequireAuth';
 import Link from 'next/link';
 import DashboardShell from '@/app/components/layout/DashboardShell';
@@ -15,61 +15,60 @@ import {
     Activity,
     ArrowRight
 } from 'lucide-react';
-
-// Mock data for Maintenance Teams
-const mockTeams = [
-    {
-        id: 'team1',
-        name: 'Mechanics',
-        active: true,
-        memberCount: 5,
-        requestCount: 15,
-        members: [
-            { id: 'u1', name: 'John Doe', avatar: null },
-            { id: 'u2', name: 'Jane Smith', avatar: null },
-        ],
-        description: 'Hardware maintenance and engine repairs'
-    },
-    {
-        id: 'team2',
-        name: 'Electricians',
-        active: true,
-        memberCount: 3,
-        requestCount: 8,
-        members: [
-            { id: 'u3', name: 'Michael Chen', avatar: null },
-        ],
-        description: 'Electrical systems and wiring'
-    },
-    {
-        id: 'team3',
-        name: 'IT Support',
-        active: true,
-        memberCount: 4,
-        requestCount: 12,
-        members: [
-            { id: 'u4', name: 'Robert Wilson', avatar: null },
-            { id: 'u5', name: 'Sarah Jones', avatar: null },
-        ],
-        description: 'Software and digital equipment maintenance'
-    }
-];
+import { getMaintenanceTeams, type MaintenanceTeam } from '@/app/services/maintenanceTeams';
 
 export default function TeamsPage() {
-    const { loading } = useRequireAuth();
+    const { loading: authLoading } = useRequireAuth();
+    const [teams, setTeams] = useState<MaintenanceTeam[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    if (loading) {
+    useEffect(() => {
+        if (!authLoading) {
+            loadTeams();
+        }
+    }, [authLoading]);
+
+    const loadTeams = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await getMaintenanceTeams({
+                limit: 100,
+                active: true,
+                search: searchTerm || undefined,
+            });
+            setTeams(response.teams);
+        } catch (err: any) {
+            const errorMessage = err?.message || err?.error || (typeof err === 'string' ? err : 'Failed to load maintenance teams');
+            console.error('Error loading teams:', errorMessage, err);
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!authLoading) {
+            const timeoutId = setTimeout(() => {
+                loadTeams();
+            }, 500);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [searchTerm]);
+
+    if (authLoading || loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#F7F8F9]">
-                <div className="text-[#5F6B76]">Loading...</div>
-            </div>
+            <DashboardShell>
+                <div className="min-h-screen flex items-center justify-center bg-[#F7F8F9]">
+                    <div className="text-[#5F6B76]">Loading...</div>
+                </div>
+            </DashboardShell>
         );
     }
 
-    const filteredTeams = mockTeams.filter(team =>
-        team.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredTeams = teams;
 
     return (
         <DashboardShell>
@@ -107,6 +106,18 @@ export default function TeamsPage() {
                         </div>
                     </div>
 
+                    {error && (
+                        <div className="mb-6 p-4 bg-[#A14A4A]/10 border border-[#A14A4A]/20 rounded-lg">
+                            <p className="text-sm text-[#A14A4A]">{error}</p>
+                            <button
+                                onClick={loadTeams}
+                                className="mt-2 text-sm font-medium text-[#A14A4A] hover:underline"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    )}
+
                     {/* Teams Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {filteredTeams.map((team) => (
@@ -126,7 +137,9 @@ export default function TeamsPage() {
 
                                     <h3 className="text-xl font-bold text-[#1C1F23] mb-2">{team.name}</h3>
                                     <p className="text-sm text-[#5F6B76] leading-relaxed line-clamp-2 min-h-[40px]">
-                                        {team.description}
+                                        {team.members && team.members.length > 0 
+                                            ? `${team.members.length} team member${team.members.length !== 1 ? 's' : ''}`
+                                            : 'No members assigned'}
                                     </p>
                                 </div>
 
@@ -136,30 +149,35 @@ export default function TeamsPage() {
                                             <span className="text-[10px] uppercase font-bold text-[#90A4AE] tracking-widest flex items-center gap-1.5">
                                                 <UserIcon size={10} /> Members
                                             </span>
-                                            <span className="text-lg font-bold text-[#1C1F23]">{team.memberCount}</span>
+                                            <span className="text-lg font-bold text-[#1C1F23]">{team.members?.length || 0}</span>
                                         </div>
                                         <div className="flex flex-col gap-1 text-right">
                                             <span className="text-[10px] uppercase font-bold text-[#90A4AE] tracking-widest flex items-center gap-1.5 justify-end">
                                                 <Activity size={10} /> Active Reqs
                                             </span>
-                                            <span className="text-lg font-bold text-[#5B7C99]">{team.requestCount}</span>
+                                            <span className="text-lg font-bold text-[#5B7C99]">{team.requestCount || 0}</span>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center justify-between">
                                         <div className="flex -space-x-3">
-                                            {team.members.map((member) => (
+                                            {team.members && team.members.slice(0, 3).map((member) => (
                                                 <div
                                                     key={member.id}
                                                     className="w-8 h-8 rounded-full bg-white border-2 border-white shadow-sm flex items-center justify-center text-[10px] font-bold text-[#5B7C99] ring-1 ring-[#ECEFF1]"
                                                     title={member.name}
                                                 >
-                                                    {member.name.split(' ').map(n => n[0]).join('')}
+                                                    {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                                                 </div>
                                             ))}
-                                            {team.memberCount > team.members.length && (
+                                            {team.members && team.members.length > 3 && (
                                                 <div className="w-8 h-8 rounded-full bg-[#ECEFF1] border-2 border-white flex items-center justify-center text-[10px] font-bold text-[#5F6B76]">
-                                                    +{team.memberCount - team.members.length}
+                                                    +{team.members.length - 3}
+                                                </div>
+                                            )}
+                                            {(!team.members || team.members.length === 0) && (
+                                                <div className="w-8 h-8 rounded-full bg-[#ECEFF1] border-2 border-white flex items-center justify-center text-[10px] font-bold text-[#5F6B76]">
+                                                    0
                                                 </div>
                                             )}
                                         </div>

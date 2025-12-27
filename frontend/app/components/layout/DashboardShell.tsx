@@ -12,11 +12,16 @@ import {
     Menu,
     X,
     ChevronRight,
+    ChevronDown,
     Shield,
     Bell,
     Search,
     User,
-    Home
+    Home,
+    Calendar,
+    Box,
+    TrendingUp,
+    Plus
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 
@@ -25,145 +30,192 @@ interface DashboardShellProps {
 }
 
 const navItems = [
-    { name: 'Equipment', href: '/equipment', icon: LayoutDashboard },
     { name: 'Maintenance', href: '/maintenance', icon: Wrench },
-    { name: 'Specialized Teams', href: '/teams', icon: Users },
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Maintenance Calendar', href: '/maintenance/calendar', icon: Calendar },
+    { name: 'Equipment', href: '/equipment', icon: Box },
+    { name: 'Reporting', href: '/reporting', icon: TrendingUp },
+    { name: 'Teams', href: '/teams', icon: Users },
 ];
 
 export default function DashboardShell({ children }: DashboardShellProps) {
     const pathname = usePathname();
     const router = useRouter();
     const { logout, user } = useAuth();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [isEquipmentMenuOpen, setIsEquipmentMenuOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const handleLogout = async () => {
         await logout();
         router.push('/auth');
     };
 
+    const getNewButtonHref = () => {
+        if (pathname.startsWith('/maintenance')) return '/maintenance/new';
+        if (pathname.startsWith('/equipment')) return '/equipment/new';
+        if (pathname.startsWith('/teams')) return '/teams/new';
+        if (pathname.startsWith('/work-centers')) return '/work-centers/new';
+        return '/maintenance/new';
+    };
+
     return (
-        <div className="min-h-screen bg-[#F7F8F9] flex">
-            {/* Sidebar */}
-            <aside
-                className={`fixed lg:static inset-y-0 left-0 z-50 bg-[#1C1F23] text-white transition-all duration-300 transform ${isSidebarOpen ? 'w-72 translate-x-0' : 'w-20 -translate-x-full lg:translate-x-0'
-                    } flex flex-col`}
-            >
-                {/* Logo */}
-                <div className="h-20 flex items-center justify-between px-6 border-b border-white/5">
-                    <div className={`flex items-center gap-3 transition-opacity duration-200 ${!isSidebarOpen && 'lg:opacity-0'}`}>
-                        <div className="w-8 h-8 bg-[#5B7C99] rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/10">G</div>
-                        <span className="text-xl font-bold tracking-tight">GearGuard</span>
+        <div className="min-h-screen bg-[#F7F8F9] flex flex-col">
+            {/* Top Navigation Bar */}
+            <header className="bg-white border-b border-[#ECEFF1] sticky top-0 z-50">
+                {/* Navigation Items */}
+                <nav className="flex items-center justify-between px-6 h-16">
+                    {/* Left Side - New Button and Nav Items */}
+                    <div className="flex items-center gap-6">
+                        <Link
+                            href={getNewButtonHref()}
+                            className="flex items-center gap-2 px-4 py-2 bg-[#5B7C99] text-white rounded-lg hover:opacity-90 transition-opacity text-sm font-medium"
+                        >
+                            <Plus size={18} />
+                            New
+                        </Link>
+                        <div className="flex items-center gap-1">
+                            {navItems.map((item) => {
+                                const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                                const Icon = item.icon;
+
+                                // Special handling for Equipment dropdown
+                                if (item.name === 'Equipment') {
+                                    const isEquipmentActive = pathname.startsWith('/equipment') || pathname.startsWith('/work-centers');
+                                    return (
+                                        <div key={item.href} className="relative">
+                                            <button
+                                                onClick={() => setIsEquipmentMenuOpen(!isEquipmentMenuOpen)}
+                                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
+                                                    isEquipmentActive
+                                                        ? 'bg-[#5B7C99] text-white'
+                                                        : 'text-[#5F6B76] hover:bg-[#F7F8F9] hover:text-[#1C1F23]'
+                                                }`}
+                                            >
+                                                <Icon size={16} />
+                                                {item.name}
+                                                <ChevronDown size={14} className={isEquipmentMenuOpen ? 'rotate-180' : ''} />
+                                            </button>
+                                            {isEquipmentMenuOpen && (
+                                                <>
+                                                    <div
+                                                        className="fixed inset-0 z-40"
+                                                        onClick={() => setIsEquipmentMenuOpen(false)}
+                                                    />
+                                                    <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-[#ECEFF1] z-50 py-2">
+                                                        <Link
+                                                            href="/equipment"
+                                                            onClick={() => setIsEquipmentMenuOpen(false)}
+                                                            className={`flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                                                                pathname.startsWith('/equipment') && !pathname.startsWith('/work-centers')
+                                                                    ? 'bg-[#5B7C99]/10 text-[#5B7C99]'
+                                                                    : 'text-[#5F6B76] hover:bg-[#F7F8F9]'
+                                                            }`}
+                                                        >
+                                                            <Wrench size={16} />
+                                                            Tools
+                                                        </Link>
+                                                        <Link
+                                                            href="/work-centers"
+                                                            onClick={() => setIsEquipmentMenuOpen(false)}
+                                                            className={`flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                                                                pathname.startsWith('/work-centers')
+                                                                    ? 'bg-[#5B7C99]/10 text-[#5B7C99]'
+                                                                    : 'text-[#5F6B76] hover:bg-[#F7F8F9]'
+                                                            }`}
+                                                        >
+                                                            <Settings size={16} />
+                                                            Work Centers
+                                                        </Link>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                            isActive
+                                                ? 'bg-[#5B7C99] text-white'
+                                                : 'text-[#5F6B76] hover:bg-[#F7F8F9] hover:text-[#1C1F23]'
+                                        }`}
+                                    >
+                                        {item.name}
+                                    </Link>
+                                );
+                            })}
+                        </div>
                     </div>
-                    <button
-                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="p-1.5 rounded-lg hover:bg-white/5 transition-colors text-white/50 hover:text-white"
-                    >
-                        {isSidebarOpen ? <X size={20} className="lg:hidden" /> : <Menu size={20} />}
-                    </button>
-                </div>
 
-                {/* Navigation */}
-                <nav className="flex-1 px-4 py-8 space-y-2">
-                    {navItems.map((item) => {
-                        const isActive = pathname.startsWith(item.href);
-                        const Icon = item.icon;
+                    {/* Right Side - User Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#F7F8F9] transition-colors"
+                        >
+                            <div className="w-8 h-8 rounded-full bg-[#5B7C99] text-white flex items-center justify-center text-sm font-bold">
+                                {user?.name?.[0]?.toUpperCase() || <User size={16} />}
+                            </div>
+                            <span className="text-sm font-medium text-[#1C1F23]">{user?.name || 'User'}</span>
+                            <ChevronDown size={16} className="text-[#5F6B76]" />
+                        </button>
 
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all group ${isActive
-                                    ? 'bg-[#5B7C99] text-white shadow-lg shadow-blue-500/20'
-                                    : 'text-white/50 hover:text-white hover:bg-white/5'
-                                    }`}
-                            >
-                                <Icon size={22} className={`${isActive ? 'text-white' : 'text-[#5B7C99] group-hover:text-white'} transition-colors`} />
-                                <span className={`font-bold text-sm tracking-wide transition-opacity duration-200 ${!isSidebarOpen && 'lg:opacity-0'}`}>
-                                    {item.name}
-                                </span>
-                                {isActive && isSidebarOpen && (
-                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/50"></div>
-                                )}
-                            </Link>
-                        );
-                    })}
+                        {/* User Dropdown Menu */}
+                        {isUserMenuOpen && (
+                            <>
+                                <div
+                                    className="fixed inset-0 z-40"
+                                    onClick={() => setIsUserMenuOpen(false)}
+                                />
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-[#ECEFF1] z-50 py-2">
+                                    <div className="px-4 py-2 border-b border-[#ECEFF1]">
+                                        <p className="text-sm font-semibold text-[#1C1F23]">{user?.name || 'User'}</p>
+                                        <p className="text-xs text-[#90A4AE] uppercase">{user?.role || 'User'}</p>
+                                    </div>
+                                    <Link
+                                        href="/settings"
+                                        className="flex items-center gap-2 px-4 py-2 text-sm text-[#5F6B76] hover:bg-[#F7F8F9] transition-colors"
+                                        onClick={() => setIsUserMenuOpen(false)}
+                                    >
+                                        <Settings size={16} />
+                                        Settings
+                                    </Link>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                    >
+                                        <LogOut size={16} />
+                                        Logout
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </nav>
 
-                {/* Bottom Actions */}
-                <div className="p-4 border-t border-white/5 space-y-2">
-                    <Link
-                        href="/"
-                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all group"
-                    >
-                        <Home size={22} className="group-hover:scale-110 transition-transform text-[#5B7C99]" />
-                        <span className={`font-bold text-sm tracking-wide transition-opacity duration-200 ${!isSidebarOpen && 'lg:opacity-0'}`}>Go to Home</span>
-                    </Link>
-                    <button className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all group">
-                        <Settings size={22} className="group-hover:rotate-45 transition-transform" />
-                        <span className={`font-bold text-sm tracking-wide transition-opacity duration-200 ${!isSidebarOpen && 'lg:opacity-0'}`}>Settings</span>
-                    </button>
-                    <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-400/5 transition-all"
-                    >
-                        <LogOut size={22} />
-                        <span className={`font-bold text-sm tracking-wide transition-opacity duration-200 ${!isSidebarOpen && 'lg:opacity-0'}`}>Logout</span>
-                    </button>
+                {/* Search Bar */}
+                <div className="px-6 pb-4">
+                    <div className="relative max-w-md">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#90A4AE]" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Q Search..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 bg-[#F7F8F9] border border-[#ECEFF1] rounded-lg text-sm focus:outline-none focus:border-[#5B7C99] focus:bg-white transition-all"
+                        />
+                    </div>
                 </div>
-            </aside>
+            </header>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col min-w-0">
-                {/* Header */}
-                <header className="h-20 bg-white/80 backdrop-blur-md border-b border-[#ECEFF1] px-8 flex items-center justify-between sticky top-0 z-40">
-                    <div className="flex items-center gap-8 flex-1">
-                        <button
-                            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="lg:hidden p-2 text-[#5F6B76] hover:bg-[#F7F8F9] rounded-lg transition-colors"
-                        >
-                            <Menu size={22} />
-                        </button>
-                        <div className="relative max-w-md w-full hidden md:block group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#90A4AE] group-focus-within:text-[#5B7C99] transition-colors" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Global search assets or requests..."
-                                className="w-full pl-10 pr-4 py-2 bg-[#F7F8F9] border border-[#ECEFF1] rounded-xl text-sm font-medium focus:outline-none focus:border-[#5B7C99] focus:bg-white transition-all"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <button className="p-2 text-[#90A4AE] hover:text-[#5B7C99] hover:bg-blue-50 rounded-xl transition-all relative">
-                            <Bell size={22} />
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                        </button>
-                        <div className="h-6 w-[1px] bg-[#ECEFF1] mx-2"></div>
-                        <div className="flex items-center gap-3 pl-2 group cursor-pointer">
-                            <div className="w-10 h-10 rounded-xl bg-[#F7F8F9] border border-[#ECEFF1] flex items-center justify-center text-[#5B7C99] font-bold shadow-sm group-hover:bg-[#5B7C99] group-hover:text-white transition-all">
-                                {user?.name?.[0]?.toUpperCase() || <User size={20} />}
-                            </div>
-                            <div className="hidden lg:block">
-                                <p className="text-sm font-bold text-[#1C1F23]">{user?.name || 'Guest User'}</p>
-                                <p className="text-[10px] font-bold text-[#90A4AE] uppercase tracking-wider">{user?.role || 'User'}</p>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-
-                {/* Dynamic Content */}
-                <div className="flex-1 overflow-auto scrollbar-hide">
-                    {children}
-                </div>
+            <main className="flex-1 overflow-auto">
+                {children}
             </main>
-
-            {/* Overlay for mobile */}
-            {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 lg:hidden z-40 backdrop-blur-sm"
-                    onClick={() => setIsSidebarOpen(false)}
-                ></div>
-            )}
         </div>
     );
 }

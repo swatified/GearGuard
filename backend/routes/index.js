@@ -21,6 +21,8 @@ router.use('/equipment-categories', require('./api/equipmentCategory.routes'));
 router.use('/departments', require('./api/department.routes'));
 router.use('/employees', require('./api/employee.routes'));
 router.use('/dashboard', require('./api/dashboard.routes'));
+router.use('/work-centers', require('./api/workCenter.routes'));
+router.use('/activity-logs', require('./api/activityLog.routes'));
 
 module.exports = router;
 

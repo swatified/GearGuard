@@ -1,6 +1,7 @@
 const Equipment = require('../models/Equipment');
 const MaintenanceRequest = require('../models/MaintenanceRequest');
 const MaintenanceTeam = require('../models/MaintenanceTeam');
+const User = require('../models/User');
 
 const getDashboardStats = async (req, res) => {
     try {
@@ -13,6 +14,26 @@ const getDashboardStats = async (req, res) => {
         const inProgressRequests = await MaintenanceRequest.countDocuments({ state: 'in_progress' });
         const completedRequests = await MaintenanceRequest.countDocuments({ state: 'repaired' });
         const overdueRequests = await MaintenanceRequest.countDocuments({ isOverdue: true });
+
+        // Calculate Critical Equipment (equipment with 3+ open requests or multiple overdue requests)
+        // For now, we'll consider equipment with 3+ open requests as critical
+        const equipmentWithOpenRequests = await MaintenanceRequest.aggregate([
+            { $match: { state: { $in: ['new', 'in_progress'] } } },
+            { $group: { _id: '$equipment', count: { $sum: 1 } } },
+            { $match: { count: { $gte: 3 } } }
+        ]);
+        const criticalEquipmentCount = equipmentWithOpenRequests.length;
+
+        // Calculate Technician Utilization
+        const totalTechnicians = await User.countDocuments({ role: 'technician' });
+        const assignedTechnicians = await MaintenanceRequest.distinct('technician', {
+            state: { $in: ['new', 'in_progress'] },
+            technician: { $ne: null }
+        });
+        const activeTechnicians = assignedTechnicians.length;
+        const technicianUtilization = totalTechnicians > 0 
+            ? Math.round((activeTechnicians / totalTechnicians) * 100) 
+            : 0;
 
         const requestsByTypeFunc = MaintenanceRequest.aggregate([
             { $group: { _id: '$requestType', count: { $sum: 1 } } }
@@ -55,7 +76,11 @@ const getDashboardStats = async (req, res) => {
                 overdueRequests,
                 totalMaintenanceCost,
                 requestsByType: formattedRequestsByType,
-                requestsByTeam
+                requestsByTeam,
+                criticalEquipmentCount,
+                technicianUtilization,
+                activeTechnicians,
+                totalTechnicians
             }
         });
     } catch (error) {
@@ -74,16 +99,47 @@ const getRecentActivity = async (req, res) => {
             .sort({ updatedAt: -1 })
             .limit(limit)
             .populate('user', 'name')
-            .populate('equipment', 'name');
+            .populate('createdBy', 'name')
+            .populate('equipment', 'name serialNumber company')
+            .populate('technician', 'name')
+            .populate('category', 'name')
+            .populate('stage', 'name');
 
-        const activity = requests.map(req => ({
-            id: req._id,
-            type: req.state === 'new' ? 'request_created' : 'request_updated',
-            message: `${req.subject} - ${req.state}`,
-            equipmentName: req.equipment ? req.equipment.name : 'Unknown Equipment',
-            timestamp: req.updatedAt,
-            user: req.user
-        }));
+        const activity = requests.map(req => {
+            const equipmentObj = req.equipment && typeof req.equipment === 'object' ? req.equipment : null;
+            const companyName = equipmentObj?.company || 'My company';
+            
+            return {
+                id: req._id.toString(),
+                name: req.name,
+                subject: req.subject,
+                employee: req.user ? {
+                    id: req.user._id.toString(),
+                    name: req.user.name
+                } : req.createdBy ? {
+                    id: req.createdBy._id.toString(),
+                    name: req.createdBy.name
+                } : null,
+                technician: req.technician ? {
+                    id: req.technician._id.toString(),
+                    name: req.technician.name
+                } : null,
+                category: req.category ? {
+                    id: req.category._id.toString(),
+                    name: req.category.name
+                } : null,
+                stage: req.stage ? {
+                    id: req.stage._id.toString(),
+                    name: req.stage.name
+                } : {
+                    name: req.state === 'new' ? 'New Request' : req.state === 'in_progress' ? 'In Progress' : req.state === 'repaired' ? 'Repaired' : req.state
+                },
+                company: companyName,
+                equipmentName: equipmentObj ? equipmentObj.name : 'Unknown Equipment',
+                timestamp: req.updatedAt,
+                state: req.state
+            };
+        });
 
         res.status(200).json({
             success: true,

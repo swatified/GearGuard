@@ -27,6 +27,9 @@ interface EquipmentDetailProps {
     warrantyEndDate?: string;
     location?: string;
     department?: { id: string; name: string };
+    category?: { id: string; name: string };
+    employee?: { id: string; name: string };
+    maintenanceTeam?: { id: string; name: string };
     requestCount?: number;
     openRequestCount?: number;
     technician?: Technician;
@@ -171,8 +174,71 @@ export default function EquipmentDetail({
                         <Users size={12} />
                         Department
                       </dt>
-                      <dd className="text-[#1C1F23] font-medium">{equipment.department?.name || 'Unassigned'}</dd>
+                      <dd className="text-[#1C1F23] font-medium">
+                        {equipment.department?.id ? (
+                          <Link
+                            href={`/departments/${equipment.department.id}`}
+                            className="text-[#5B7C99] hover:text-[#4A6B88] hover:underline transition-colors"
+                          >
+                            {equipment.department.name}
+                          </Link>
+                        ) : (
+                          'Unassigned'
+                        )}
+                      </dd>
                     </div>
+                    <div className="space-y-1.5">
+                      <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
+                        <Tag size={12} />
+                        Category
+                      </dt>
+                      <dd className="text-[#1C1F23] font-medium">
+                        {equipment.category?.id ? (
+                          <Link
+                            href={`/categories/${equipment.category.id}`}
+                            className="text-[#5B7C99] hover:text-[#4A6B88] hover:underline transition-colors"
+                          >
+                            {equipment.category.name}
+                          </Link>
+                        ) : (
+                          'Uncategorized'
+                        )}
+                      </dd>
+                    </div>
+                    <div className="space-y-1.5">
+                      <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
+                        <Tag size={12} />
+                        Serial Number
+                      </dt>
+                      <dd className="text-[#1C1F23] font-medium">{equipment.serialNumber || 'Not specified'}</dd>
+                    </div>
+                    {(equipment as any).company && (
+                      <div className="space-y-1.5">
+                        <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
+                          <Tag size={12} />
+                          Company
+                        </dt>
+                        <dd className="text-[#1C1F23] font-medium">{(equipment as any).company}</dd>
+                      </div>
+                    )}
+                    {(equipment as any).model && (
+                      <div className="space-y-1.5">
+                        <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
+                          <Tag size={12} />
+                          Model
+                        </dt>
+                        <dd className="text-[#1C1F23] font-medium">{(equipment as any).model}</dd>
+                      </div>
+                    )}
+                    {(equipment as any).manufacturer && (
+                      <div className="space-y-1.5">
+                        <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
+                          <Tag size={12} />
+                          Manufacturer
+                        </dt>
+                        <dd className="text-[#1C1F23] font-medium">{(equipment as any).manufacturer}</dd>
+                      </div>
+                    )}
                     <div className="space-y-1.5">
                       <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
                         <Calendar size={12} />
@@ -184,12 +250,85 @@ export default function EquipmentDetail({
                     </div>
                     <div className="space-y-1.5">
                       <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
-                        <User size={12} />
-                        Technician
+                        <Users size={12} />
+                        Maintenance Team
                       </dt>
-                      <dd className="text-[#1C1F23] font-medium font-semibold">{equipment.technician?.name || 'Not assigned'}</dd>
+                      <dd className="text-[#1C1F23] font-medium">
+                        {equipment.maintenanceTeamId && equipment.maintenanceTeam ? (
+                          <Link
+                            href={`/teams/${equipment.maintenanceTeamId}`}
+                            className="text-[#5B7C99] hover:text-[#4A6B88] hover:underline transition-colors"
+                          >
+                            {equipment.maintenanceTeam.name}
+                          </Link>
+                        ) : (
+                          'Not assigned'
+                        )}
+                      </dd>
                     </div>
+                    <div className="space-y-1.5">
+                      <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
+                        <User size={12} />
+                        Assigned Employee
+                      </dt>
+                      <dd className="text-[#1C1F23] font-medium">
+                        {equipment.employee?.id ? (
+                          <Link
+                            href={`/employees/${equipment.employee.id}`}
+                            className="text-[#5B7C99] hover:text-[#4A6B88] hover:underline transition-colors"
+                          >
+                            {equipment.employee.name}
+                          </Link>
+                        ) : (
+                          'Not assigned'
+                        )}
+                      </dd>
+                    </div>
+                    <div className="space-y-1.5">
+                      <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
+                        <Wrench size={12} />
+                        Default Technician
+                      </dt>
+                      <dd className="text-[#1C1F23] font-medium font-semibold">
+                        {equipment.technician?.id ? (
+                          <Link
+                            href={`/users/${equipment.technician.id}`}
+                            className="text-[#5B7C99] hover:text-[#4A6B88] hover:underline transition-colors"
+                          >
+                            {equipment.technician.name}
+                          </Link>
+                        ) : (
+                          'Not assigned'
+                        )}
+                      </dd>
+                    </div>
+                    {(equipment as any).workCenter && (
+                      <div className="space-y-1.5">
+                        <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider flex items-center gap-2">
+                          <Tag size={12} />
+                          Work Center
+                        </dt>
+                        <dd className="text-[#1C1F23] font-medium">
+                          {(equipment as any).workCenter?.id ? (
+                            <Link
+                              href={`/work-centers/${(equipment as any).workCenter.id}`}
+                              className="text-[#5B7C99] hover:text-[#4A6B88] hover:underline transition-colors"
+                            >
+                              {(equipment as any).workCenter.name}
+                            </Link>
+                          ) : (
+                            'Not assigned'
+                          )}
+                        </dd>
+                      </div>
+                    )}
                   </div>
+                  {(equipment as any).technicalSpecifications && (
+                    <div className="mt-6 pt-6 border-t border-[#ECEFF1]">
+                      <dt className="text-xs font-bold text-[#90A4AE] uppercase tracking-wider mb-2">Technical Specifications</dt>
+                      <dd className="text-[#1C1F23] font-medium whitespace-pre-wrap">{(equipment as any).technicalSpecifications}</dd>
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-white rounded-2xl p-8 border border-[#ECEFF1] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">

@@ -9,6 +9,24 @@ const getDepartments = async (req, res) => {
     }
 };
 
+const getDepartmentById = async (req, res) => {
+    try {
+        const department = await Department.findById(req.params.id);
+        
+        if (!department) {
+            return res.status(404).json({
+                success: false,
+                error: 'Not Found',
+                message: 'Department not found'
+            });
+        }
+        
+        res.status(200).json({ success: true, data: department });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Server Error', message: error.message });
+    }
+};
+
 const createDepartment = async (req, res) => {
     try {
         const department = await Department.create(req.body);
@@ -18,4 +36,4 @@ const createDepartment = async (req, res) => {
     }
 };
 
-module.exports = { getDepartments, createDepartment };
+module.exports = { getDepartments, getDepartmentById, createDepartment };

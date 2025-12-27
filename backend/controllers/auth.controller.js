@@ -69,29 +69,50 @@ const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Validation Error',
+                message: 'Email and password are required'
+            });
+        }
+
         const user = await User.findOne({ email });
 
-        if (user && (await user.matchPassword(password))) {
-            res.json({
-                success: true,
-                data: {
-                    user: {
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
-                        role: user.role
-                    },
-                    token: generateToken(user.id),
-                }
-            });
-        } else {
-            res.status(401).json({
+        if (!user) {
+            console.error(`Login attempt failed: User not found for email: ${email}`);
+            return res.status(401).json({
                 success: false,
                 error: 'Invalid Credentials',
                 message: 'Email or password is incorrect'
             });
         }
+
+        const isPasswordMatch = await user.matchPassword(password);
+        
+        if (!isPasswordMatch) {
+            console.error(`Login attempt failed: Invalid password for email: ${email}`);
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid Credentials',
+                message: 'Email or password is incorrect'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role
+                },
+                token: generateToken(user.id),
+            }
+        });
     } catch (error) {
+        console.error('Login error:', error);
         res.status(500).json({
             success: false,
             error: 'Server Error',

@@ -11,6 +11,22 @@ const equipmentSchema = new mongoose.Schema({
         unique: true,
         sparse: true
     },
+    company: {
+        type: String,
+        trim: true
+    },
+    model: {
+        type: String,
+        trim: true
+    },
+    manufacturer: {
+        type: String,
+        trim: true
+    },
+    technicalSpecifications: {
+        type: String,
+        trim: true
+    },
     purchaseDate: Date,
     warrantyStartDate: Date,
     warrantyEndDate: Date,
@@ -35,6 +51,16 @@ const equipmentSchema = new mongoose.Schema({
     technicianId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    },
+    workCenterId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'WorkCenter',
+        default: null
+    },
+    equipmentType: {
+        type: String,
+        enum: ['workCenter', 'machineTools'],
+        default: 'workCenter'
     },
     active: {
         type: Boolean,

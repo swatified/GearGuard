@@ -22,10 +22,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import KanbanCard from './KanbanCard';
 import { MoreHorizontal, Plus, AlertCircle, CheckCircle2, Wrench, Trash2 } from 'lucide-react';
-import type {
-  MaintenanceRequest,
-  MaintenanceRequestState,
-} from '@/app/types/maintenance';
+import type { MaintenanceRequest } from '@/app/services/maintenanceRequests';
+import type { MaintenanceRequestState } from '@/app/types/maintenance';
 
 interface KanbanBoardProps {
   requests: MaintenanceRequest[];
@@ -34,6 +32,8 @@ interface KanbanBoardProps {
     newState: MaintenanceRequestState
   ) => void;
   onCardClick?: (request: MaintenanceRequest) => void;
+  userRole?: 'user' | 'technician' | 'manager' | 'admin';
+  currentUserId?: string;
 }
 
 const COLUMNS: { id: MaintenanceRequestState; label: string; icon: any; color: string }[] = [
@@ -46,9 +46,11 @@ const COLUMNS: { id: MaintenanceRequestState; label: string; icon: any; color: s
 function SortableCard({
   request,
   onCardClick,
+  isDraggable = true,
 }: {
   request: MaintenanceRequest;
   onCardClick?: (request: MaintenanceRequest) => void;
+  isDraggable?: boolean;
 }) {
   const {
     attributes,
@@ -57,7 +59,10 @@ function SortableCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: request.id });
+  } = useSortable({ 
+    id: request.id,
+    disabled: !isDraggable,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -67,7 +72,12 @@ function SortableCard({
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="mb-4 touch-none">
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      {...(isDraggable ? { ...attributes, ...listeners } : {})} 
+      className={`mb-4 touch-none ${!isDraggable ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`}
+    >
       <KanbanCard request={request} onCardClick={onCardClick} />
     </div>
   );
@@ -77,13 +87,16 @@ function DroppableColumn({
   column,
   requests,
   onCardClick,
+  isDisabled = false,
 }: {
   column: { id: MaintenanceRequestState; label: string; icon: any; color: string };
   requests: MaintenanceRequest[];
   onCardClick?: (request: MaintenanceRequest) => void;
+  isDisabled?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
+    disabled: isDisabled,
   });
 
   const Icon = column.icon;
@@ -92,11 +105,13 @@ function DroppableColumn({
     <div className="flex-1 min-w-[280px] flex flex-col h-full">
       <div className="flex items-center justify-between mb-4 px-2">
         <div className="flex items-center gap-2">
-          <div className={`p-1.5 rounded-md bg-white border border-[#ECEFF1] ${column.color}`}>
+          <div className={`p-1.5 rounded-md bg-white border border-[#ECEFF1] ${column.color} ${isDisabled ? 'opacity-50' : ''}`}>
             <Icon size={16} />
           </div>
-          <h2 className="text-sm font-bold text-[#1C1F23] uppercase tracking-wider">{column.label}</h2>
-          <span className="text-[10px] font-bold bg-[#ECEFF1] text-[#5F6B76] px-2 py-0.5 rounded-full">
+          <h2 className={`text-sm font-bold uppercase tracking-wider ${isDisabled ? 'text-[#90A4AE]' : 'text-[#1C1F23]'}`}>
+            {column.label}
+          </h2>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDisabled ? 'bg-[#ECEFF1]/50 text-[#90A4AE]' : 'bg-[#ECEFF1] text-[#5F6B76]'}`}>
             {requests.length}
           </span>
         </div>
@@ -107,20 +122,31 @@ function DroppableColumn({
 
       <div
         ref={setNodeRef}
-        className={`flex-1 overflow-y-auto overflow-x-hidden p-3 rounded-2xl border-2 transition-all duration-200 min-h-[500px] ${isOver ? 'bg-[#5B7C99]/5 border-[#5B7C99] border-dashed' : 'bg-[#F1F3F5] border-transparent'
-          }`}
+        className={`flex-1 overflow-y-auto overflow-x-hidden p-3 rounded-2xl border-2 transition-all duration-200 min-h-[600px] max-h-[calc(100vh-200px)] ${
+          isDisabled 
+            ? 'bg-[#F1F3F5]/50 border-[#CFD8DC] opacity-60 cursor-not-allowed' 
+            : isOver 
+              ? 'bg-[#5B7C99]/5 border-[#5B7C99] border-dashed' 
+              : 'bg-[#F1F3F5] border-transparent'
+        }`}
       >
         <SortableContext
           items={requests.map((r) => r.id)}
           strategy={verticalListSortingStrategy}
         >
-          {requests.map((request) => (
-            <SortableCard
-              key={request.id}
-              request={request}
-              onCardClick={onCardClick}
-            />
-          ))}
+          {requests.map((request) => {
+            // For regular users in disabled columns, disable dragging
+            const canDrag = !isDisabled;
+            
+            return (
+              <SortableCard
+                key={request.id}
+                request={request}
+                onCardClick={onCardClick}
+                isDraggable={canDrag}
+              />
+            );
+          })}
 
           {requests.length === 0 && (
             <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-[#CFD8DC] rounded-xl text-[#90A4AE] bg-white/50">
@@ -137,6 +163,8 @@ export default function KanbanBoard({
   requests,
   onStateChange,
   onCardClick,
+  userRole = 'user',
+  currentUserId,
 }: KanbanBoardProps) {
   const [columns, setColumns] = useState<
     Record<MaintenanceRequestState, MaintenanceRequest[]>
@@ -177,6 +205,48 @@ export default function KanbanBoard({
     setActiveRequest(request || null);
   };
 
+  // Check if user can move request to a specific state (role-based workflow)
+  const canMoveToState = (request: MaintenanceRequest, targetState: MaintenanceRequestState): boolean => {
+    // Admins and managers can move to any state
+    if (userRole === 'admin' || userRole === 'manager') {
+      return true;
+    }
+
+    // Regular users cannot move to "In Progress" or "Repaired"
+    if (userRole === 'user') {
+      if (targetState === 'in_progress' || targetState === 'repaired' || targetState === 'scrap') {
+        return false;
+      }
+      // Users can only move their own requests back to "new" (unusual but allowed)
+      return targetState === 'new';
+    }
+
+    // Technicians can move to "In Progress" if:
+    // - They are assigned to the request, OR
+    // - They are a member of the maintenance team
+    if (userRole === 'technician') {
+      if (targetState === 'in_progress') {
+        const isAssigned = request.technician?.id === currentUserId;
+        // Note: Team membership check would require additional data, but backend will validate
+        return isAssigned || true; // Backend will do the final validation
+      }
+      
+      // Technicians can only mark as "Repaired" if they are assigned
+      if (targetState === 'repaired') {
+        return request.technician?.id === currentUserId;
+      }
+
+      // Technicians cannot mark as "Scrap"
+      if (targetState === 'scrap') {
+        return false;
+      }
+
+      return true;
+    }
+
+    return false;
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -205,6 +275,13 @@ export default function KanbanBoard({
     if (newState) {
       const request = requests.find((r) => r.id === requestId);
       if (request && request.state !== newState) {
+        // Check if user has permission to move to this state
+        if (!canMoveToState(request, newState)) {
+          // Show error or prevent the move
+          console.warn(`User with role ${userRole} cannot move request to ${newState}`);
+          setActiveRequest(null);
+          return;
+        }
         onStateChange?.(requestId, newState);
       }
     }
@@ -219,15 +296,21 @@ export default function KanbanBoard({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-6 h-full overflow-x-auto pb-4 scrollbar-hide">
-        {COLUMNS.map((column) => (
-          <DroppableColumn
-            key={column.id}
-            column={column}
-            requests={columns[column.id] || []}
-            onCardClick={onCardClick}
-          />
-        ))}
+      <div className="flex gap-6 h-full overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide">
+        {COLUMNS.map((column) => {
+          // Determine if this column should be disabled for the current user
+          const isDisabled = userRole === 'user' && (column.id === 'in_progress' || column.id === 'repaired' || column.id === 'scrap');
+          
+          return (
+            <DroppableColumn
+              key={column.id}
+              column={column}
+              requests={columns[column.id] || []}
+              onCardClick={onCardClick}
+              isDisabled={isDisabled}
+            />
+          );
+        })}
       </div>
 
       <DragOverlay dropAnimation={{

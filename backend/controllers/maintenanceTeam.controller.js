@@ -1,5 +1,7 @@
 const MaintenanceTeam = require('../models/MaintenanceTeam');
+const MaintenanceRequest = require('../models/MaintenanceRequest');
 const User = require('../models/User');
+const mongoose = require('mongoose');
 
 const getTeams = async (req, res) => {
     try {
@@ -24,12 +26,39 @@ const getTeams = async (req, res) => {
             .limit(limit)
             .sort({ createdAt: -1 });
 
+        // Get request counts for each team
+        const teamIds = teams.map(team => team._id);
+        const requestCounts = await MaintenanceRequest.aggregate([
+            {
+                $match: {
+                    maintenanceTeam: { $in: teamIds },
+                    state: { $in: ['new', 'in_progress'] }
+                }
+            },
+            {
+                $group: {
+                    _id: '$maintenanceTeam',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const requestCountMap = {};
+        requestCounts.forEach(item => {
+            requestCountMap[item._id.toString()] = item.count;
+        });
+
         const formattedTeams = teams.map(team => ({
             id: team._id,
             name: team.name,
             memberIds: team.members.map(m => m._id),
-            members: team.members,
+            members: team.members.map(m => ({
+                id: m._id,
+                name: m.name,
+                email: m.email
+            })),
             active: team.active,
+            requestCount: requestCountMap[team._id.toString()] || 0,
             createdAt: team.createdAt
         }));
 
@@ -46,16 +75,25 @@ const getTeams = async (req, res) => {
             }
         });
     } catch (error) {
+        console.error('Error in getTeams:', error);
         res.status(500).json({
             success: false,
             error: 'Server Error',
-            message: error.message
+            message: error.message || 'Failed to fetch maintenance teams'
         });
     }
 };
 
 const getTeamById = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid ID',
+                message: 'Invalid team ID format'
+            });
+        }
+
         const team = await MaintenanceTeam.findById(req.params.id)
             .populate('members', 'name email');
 
@@ -67,24 +105,34 @@ const getTeamById = async (req, res) => {
             });
         }
 
+        const requestCount = await MaintenanceRequest.countDocuments({
+            maintenanceTeam: team._id,
+            state: { $in: ['new', 'in_progress'] }
+        });
+
         res.status(200).json({
             success: true,
             data: {
-                id: team._id,
+                id: team._id.toString(),
                 name: team.name,
-                memberIds: team.members.map(m => m._id),
-                members: team.members,
-                requestCount: 0,
+                memberIds: team.members.map(m => m._id.toString()),
+                members: team.members.map(m => ({
+                    id: m._id.toString(),
+                    name: m.name,
+                    email: m.email
+                })),
+                requestCount: requestCount,
                 active: team.active,
                 createdAt: team.createdAt,
                 updatedAt: team.updatedAt
             }
         });
     } catch (error) {
+        console.error('Error in getTeamById:', error);
         res.status(500).json({
             success: false,
             error: 'Server Error',
-            message: error.message
+            message: error.message || 'Failed to fetch maintenance team details'
         });
     }
 };
