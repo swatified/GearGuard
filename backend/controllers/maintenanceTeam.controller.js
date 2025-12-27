@@ -92,7 +92,6 @@ const getTeamById = async (req, res) => {
 const createTeam = async (req, res) => {
     try {
         const { name, memberIds, active } = req.body;
-
         const team = await MaintenanceTeam.create({
             name,
             members: memberIds || [],
@@ -100,14 +99,16 @@ const createTeam = async (req, res) => {
             createdBy: req.user.id
         });
 
+        const populatedTeam = await MaintenanceTeam.findById(team._id).populate('members', 'name email');
+
         res.status(201).json({
             success: true,
             data: {
-                id: team._id,
-                name: team.name,
-                memberIds: team.members,
-                active: team.active,
-                createdAt: team.createdAt
+                id: populatedTeam._id,
+                name: populatedTeam.name,
+                members: populatedTeam.members,
+                active: populatedTeam.active,
+                createdAt: populatedTeam.createdAt
             }
         });
     } catch (error) {
@@ -142,14 +143,14 @@ const updateTeam = async (req, res) => {
             req.params.id,
             fieldsToUpdate,
             { new: true, runValidators: true }
-        );
+        ).populate('members', 'name email');
 
         res.status(200).json({
             success: true,
             data: {
                 id: team._id,
                 name: team.name,
-                memberIds: team.members,
+                members: team.members,
                 active: team.active,
                 updatedAt: team.updatedAt
             }
