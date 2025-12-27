@@ -9,6 +9,25 @@ const getEmployees = async (req, res) => {
     }
 };
 
+const getEmployeeById = async (req, res) => {
+    try {
+        const employee = await Employee.findById(req.params.id)
+            .populate('department', 'name');
+        
+        if (!employee) {
+            return res.status(404).json({
+                success: false,
+                error: 'Not Found',
+                message: 'Employee not found'
+            });
+        }
+        
+        res.status(200).json({ success: true, data: employee });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Server Error', message: error.message });
+    }
+};
+
 const createEmployee = async (req, res) => {
     try {
         const employee = await Employee.create(req.body);
@@ -18,4 +37,4 @@ const createEmployee = async (req, res) => {
     }
 };
 
-module.exports = { getEmployees, createEmployee };
+module.exports = { getEmployees, getEmployeeById, createEmployee };

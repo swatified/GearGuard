@@ -3,6 +3,7 @@ const MaintenanceStage = require('../models/MaintenanceStage');
 const Equipment = require('../models/Equipment');
 const MaintenanceTeam = require('../models/MaintenanceTeam');
 const mongoose = require('mongoose');
+const { logActivity } = require('../utils/activityLogger');
 
 const getRequests = async (req, res) => {
     try {
@@ -257,6 +258,14 @@ const createRequest = async (req, res) => {
 
         const request = await MaintenanceRequest.create(requestData);
 
+        // Log activity
+        await logActivity({
+            requestId: request._id,
+            action: 'created',
+            description: `Maintenance request "${request.subject}" was created`,
+            userId: req.user.id
+        });
+
         const populatedRequest = await MaintenanceRequest.findById(request._id)
             .populate('equipment', 'name')
             .populate('maintenanceTeam', 'name')
@@ -289,10 +298,63 @@ const updateRequest = async (req, res) => {
             });
         }
 
-        request = await MaintenanceRequest.findByIdAndUpdate(
-            req.params.id,
-            { ...req.body, updatedBy: req.user.id },
-            { new: true, runValidators: true }
+        // Track changes for activity log
+        const changes = [];
+        const oldValues = {};
+        
+        Object.keys(req.body).forEach(key => {
+            if (key !== 'updatedBy' && request[key] !== undefined && request[key] !== req.body[key]) {
+                oldValues[key] = request[key];
+                changes.push(key);
+            }
+        });
+
+        // Prepare update data - only include fields that are being updated
+        const updateData = { updatedBy: req.user.id };
+        
+        // Only include fields that are provided and valid
+        if (req.body.subject !== undefined && req.body.subject !== null && req.body.subject !== '') {
+            updateData.subject = req.body.subject;
+        }
+        if (req.body.description !== undefined) {
+            updateData.description = req.body.description || undefined;
+        }
+        if (req.body.scheduledDate !== undefined) {
+            updateData.scheduledDate = req.body.scheduledDate || null;
+        }
+        if (req.body.duration !== undefined && req.body.duration !== null) {
+            updateData.duration = Number(req.body.duration) || 0;
+        }
+        if (req.body.note !== undefined) {
+            updateData.note = req.body.note || undefined;
+        }
+        if (req.body.priority !== undefined) {
+            updateData.priority = req.body.priority;
+        }
+        if (req.body.dateStart !== undefined) {
+            updateData.dateStart = req.body.dateStart || null;
+        }
+        if (req.body.dateEnd !== undefined) {
+            updateData.dateEnd = req.body.dateEnd || null;
+        }
+        if (req.body.maintenanceCost !== undefined && req.body.maintenanceCost !== null) {
+            updateData.maintenanceCost = Number(req.body.maintenanceCost) || 0;
+        }
+
+        // Manually validate subject if it's being updated
+        if (updateData.subject !== undefined && (!updateData.subject || updateData.subject.trim() === '')) {
+            return res.status(400).json({
+                success: false,
+                error: 'Validation Error',
+                message: 'Subject is required and cannot be empty'
+            });
+        }
+
+        // Use findOneAndUpdate with context to avoid validation issues with required fields
+        request = await MaintenanceRequest.findOneAndUpdate(
+            { _id: req.params.id },
+            updateData,
+            { new: true, runValidators: false } // Set to false to avoid validating unchanged required fields
         )
             .populate('equipment', 'name')
             .populate('maintenanceTeam', 'name')
@@ -300,15 +362,39 @@ const updateRequest = async (req, res) => {
             .populate('technician', 'name')
             .populate('stage', 'name');
 
+        if (!request) {
+            return res.status(404).json({
+                success: false,
+                error: 'Not Found',
+                message: 'Maintenance request not found'
+            });
+        }
+
+        // Log activities for each changed field
+        for (const field of changes) {
+            if (updateData[field] !== undefined) {
+                await logActivity({
+                    requestId: request._id,
+                    action: 'field_updated',
+                    description: `${field} was updated`,
+                    userId: req.user.id,
+                    fieldName: field,
+                    oldValue: oldValues[field],
+                    newValue: updateData[field]
+                });
+            }
+        }
+
         res.status(200).json({
             success: true,
             data: request
         });
     } catch (error) {
-        res.status(500).json({
+        console.error('Error in updateRequest:', error);
+        res.status(400).json({
             success: false,
-            error: 'Server Error',
-            message: error.message
+            error: 'Validation Error',
+            message: error.message || 'Failed to update maintenance request'
         });
     }
 };
@@ -336,10 +422,25 @@ const assignTechnician = async (req, res) => {
             });
         }
 
+        const oldTechnicianId = request.technician?.toString();
         request.technician = technicianId;
         await request.save();
 
         request = await request.populate('technician', 'name');
+
+        // Log activity
+        const action = oldTechnicianId ? 'technician_assigned' : 'technician_assigned';
+        await logActivity({
+            requestId: request._id,
+            action,
+            description: oldTechnicianId 
+                ? `Technician changed from ${oldTechnicianId} to ${technicianId}`
+                : `Technician ${technicianId} assigned`,
+            userId: req.user.id,
+            fieldName: 'technician',
+            oldValue: oldTechnicianId,
+            newValue: technicianId
+        });
 
         res.status(200).json({
             success: true,
@@ -468,6 +569,10 @@ const updateStage = async (req, res) => {
             }
         }
 
+        // Track old stage for activity log
+        const oldStage = request.stage;
+        const oldState = request.state;
+
         // Update the stage
         request.stage = stageId;
 
@@ -481,6 +586,22 @@ const updateStage = async (req, res) => {
 
         await request.save();
         request = await request.populate('stage', 'name');
+
+        // Log activity
+        await logActivity({
+            requestId: request._id,
+            action: 'stage_changed',
+            description: `Stage changed to "${stage.name}"`,
+            userId: req.user.id,
+            fieldName: 'stage',
+            oldValue: oldStage?.toString(),
+            newValue: stageId.toString(),
+            metadata: {
+                oldState,
+                newState: request.state,
+                stageName: stage.name
+            }
+        });
 
         res.status(200).json({
             success: true,

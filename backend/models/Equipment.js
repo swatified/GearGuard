@@ -57,6 +57,11 @@ const equipmentSchema = new mongoose.Schema({
         ref: 'WorkCenter',
         default: null
     },
+    equipmentType: {
+        type: String,
+        enum: ['workCenter', 'machineTools'],
+        default: 'workCenter'
+    },
     active: {
         type: Boolean,
         default: true
