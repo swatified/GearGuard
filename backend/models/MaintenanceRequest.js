@@ -16,6 +16,10 @@ const maintenanceRequestSchema = new mongoose.Schema({
         ref: 'Equipment',
         required: true
     },
+    category: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'EquipmentCategory'
+    },
     maintenanceTeam: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'MaintenanceTeam',
@@ -78,7 +82,16 @@ const maintenanceRequestSchema = new mongoose.Schema({
         ref: 'User'
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
+
+maintenanceRequestSchema.virtual('is_overdue').get(function () {
+    if (this.state !== 'repaired' && this.state !== 'scrap' && this.scheduledDate) {
+        return new Date(this.scheduledDate) < new Date();
+    }
+    return false;
 });
 
 maintenanceRequestSchema.pre('save', async function (next) {

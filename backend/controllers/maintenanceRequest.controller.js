@@ -35,6 +35,7 @@ const getRequests = async (req, res) => {
         const requests = await MaintenanceRequest.find(query)
             .populate('equipment', 'name serialNumber')
             .populate('maintenanceTeam', 'name')
+            .populate('category', 'name')
             .populate('technician', 'name email')
             .populate('user', 'name')
             .populate('stage', 'name sequence')
@@ -68,6 +69,7 @@ const getRequestById = async (req, res) => {
         const request = await MaintenanceRequest.findById(req.params.id)
             .populate('equipment', 'name serialNumber location')
             .populate('maintenanceTeam', 'name members')
+            .populate('category', 'name')
             .populate('technician', 'name email')
             .populate('user', 'name')
             .populate('stage', 'name sequence');
@@ -111,20 +113,25 @@ const createRequest = async (req, res) => {
             stage = await MaintenanceStage.create({ name: 'New', sequence: 10 });
         }
 
-        const request = await MaintenanceRequest.create({
+        const requestData = {
             ...rest,
             equipment: equipmentId,
             maintenanceTeam: equipment.maintenanceTeamId,
+            category: equipment.categoryId,
+            technician: equipment.technicianId,
             user: req.user.id,
             state: 'new',
             stage: stage._id,
             createdBy: req.user.id
-        });
+        };
 
-        // Populate for response
+        const request = await MaintenanceRequest.create(requestData);
+
         const populatedRequest = await MaintenanceRequest.findById(request._id)
             .populate('equipment', 'name')
             .populate('maintenanceTeam', 'name')
+            .populate('category', 'name')
+            .populate('technician', 'name')
             .populate('stage', 'name');
 
         res.status(201).json({
@@ -156,7 +163,12 @@ const updateRequest = async (req, res) => {
             req.params.id,
             { ...req.body, updatedBy: req.user.id },
             { new: true, runValidators: true }
-        );
+        )
+            .populate('equipment', 'name')
+            .populate('maintenanceTeam', 'name')
+            .populate('category', 'name')
+            .populate('technician', 'name')
+            .populate('stage', 'name');
 
         res.status(200).json({
             success: true,
@@ -181,6 +193,16 @@ const assignTechnician = async (req, res) => {
                 success: false,
                 error: 'Not Found',
                 message: 'Maintenance request not found'
+            });
+        }
+
+        // Workflow Logic: Check if the technician belongs to the assigned maintenance team
+        const team = await MaintenanceTeam.findById(request.maintenanceTeam);
+        if (!team.members.includes(technicianId) && req.user.role !== 'admin') {
+            return res.status(400).json({
+                success: false,
+                error: 'Validation Error',
+                message: 'Assigned technician must be a member of the maintenance team'
             });
         }
 
