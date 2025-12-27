@@ -1,5 +1,5 @@
 const express = require('express');
-const mongoose = require('mongoose');
+
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -14,27 +14,15 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// MongoDB Connection
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gearguard', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error(`Error: ${error.message}`);
-    process.exit(1);
-  }
-};
+const connectDB = require('./config/database');
 
 // Connect to database
 connectDB();
 
 // Routes
 app.get('/', (req, res) => {
-  res.json({ 
-    message: 'GearGuard API is running', 
+  res.json({
+    message: 'GearGuard API is running',
     version: '1.0.0',
     endpoints: {
       health: '/api/health',

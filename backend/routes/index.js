@@ -3,16 +3,16 @@ const router = express.Router();
 
 // Health check route
 router.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     service: 'GearGuard API'
   });
 });
 
 // API routes will be mounted here
-// router.use('/auth', require('./api/auth.routes'));
-// router.use('/users', require('./api/user.routes'));
+router.use('/auth', require('./api/auth.routes'));
+router.use('/users', require('./api/user.routes'));
 // router.use('/equipment', require('./api/equipment.routes'));
 // router.use('/maintenance-teams', require('./api/maintenanceTeam.routes'));
 // router.use('/maintenance-requests', require('./api/maintenanceRequest.routes'));
