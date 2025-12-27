@@ -249,43 +249,29 @@ cd frontend
 npm test
 ```
 
----
+&nbsp;&nbsp;
 
 ## 👥 Team Members
 
-### Swati Sharma
-- **Email**: [25sharmswati@gmail.com](mailto:25sharmswati@gmail.com)
-- **GitHub**: [@swatified](https://github.com/swatified)
+_Swati Sharma_: [@swatified](https://github.com/swatified)
 
-### Sourav Upreti
-- **Email**: [souravupreti9@gmail.com](mailto:souravupreti9@gmail.com)
-- **GitHub**: [@souravupreti](https://github.com/souravupreti)
+_Sourav Upreti_: [@souravupreti](https://github.com/souravupreti)
 
-### Varun Bahuguna
-- **Email**: [varunbahuguna26@gmail.com](mailto:varunbahuguna26@gmail.com)
-- **GitHub**: [@varun858-tech](https://github.com/varun858-tech)
+_Varun Bahuguna_: [@varun858-tech](https://github.com/varun858-tech)
 
-### Ansh Bhatt
-- **Email**: [anshbhatt140@gmail.com](mailto:anshbhatt140@gmail.com)
-- **GitHub**: [@ansh-logics](https://github.com/ansh-logics)
+_Ansh Bhatt_: [@ansh-logics](https://github.com/ansh-logics)
 
----
+&nbsp;
 
 ## 📄 License
 
 This project is part of online round for Odoo x Adani University Hackathon '26. All rights reserved.
 
----
+&nbsp;
 
 ## 🙏 Acknowledgments
 
 - Odoo team for the project requirements
 - Team members for collaboration and contributions
 - Open-source community for amazing tools and libraries
-
----
-
-**Last Updated**: January 2024
-
-**Project Status**: 🚧 In Development
 
